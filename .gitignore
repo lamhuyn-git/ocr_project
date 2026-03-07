@@ -234,10 +234,10 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# Project-specific ignores
-# Output files from OCR processing
-outputs/*
-!outputs/.gitkeep
+# # Project-specific ignores
+# # Output files from OCR processing
+# outputs/*
+# !outputs/.gitkeep
 
 # Temporary image files
 temp_images/
