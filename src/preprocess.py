@@ -104,7 +104,7 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     img = cv2.imread(image_path)
     if img is None:
         raise FileNotFoundError(f"Không tìm thấy ảnh: {image_path}")
-    print(f"Loaded image successfully: {img.shape[1]}x{img.shape[0]}px\n")
+    print(f"\nLoaded image successfully: {img.shape[1]}x{img.shape[0]}px\n")
 
     # print("[1/5] Detecting and fixing orientation...")
     # img = fix_orientation(img)
@@ -121,18 +121,13 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     print("\n[4/4] Enhancing contrast...")
     img = apply_clahe(img)
 
-    print("\n" + "=" * 45)
-    print(f"Done! Output: {img.shape[1]}x{img.shape[0]}px")
-    print("=" * 45)
-    
     os.makedirs('outputs', exist_ok=True)
     base_name = os.path.basename(image_path)
     debug_path = f"outputs/debug_{base_name}"
     cv2.imwrite(debug_path, img)
     print(f"\nImage Debug saved in {debug_path}")
 
-
     print("\n" + "=" * 45)
-    print(f"Done ")
+    print(f"DONE PREPROCESSING! OUPTPUT: {img.shape[1]}x{img.shape[0]}px")
     print("=" * 45)
     return img

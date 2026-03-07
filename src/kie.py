@@ -8,9 +8,8 @@ import re
 from typing import List, Dict, Optional, Tuple
 
 
-# ================================================
+
 #  REGEX PATTERNS
-# ================================================
 
 # Ngày tháng năm: DD/MM/YYYY hoặc DD-MM-YYYY hoặc DD.MM.YYYY
 DATE_PATTERN = re.compile(r'\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})\b')
