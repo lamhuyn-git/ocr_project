@@ -17,15 +17,20 @@ Thu thập ảnh → Annotation (PPOCRLabel) → Chuẩn bị dataset → Fine-t
 
 ## BƯỚC 1 — Cài đặt môi trường
 
-```bash
+``bash`
+
 # Cài PPOCRLabel (tool annotation)
+
 pip install PPOCRLabel
 
 # Cài PaddleX (framework fine-tune của PaddleOCR 3.x)
+
 pip install paddlex
 
 # Kiểm tra
+
 PPOCRLabel --help
+
 ```
 
 > ⚠️ **Lưu ý:** PaddleOCR 3.x dùng PaddleX để fine-tune, khác với cách của PaddleOCR 2.x
@@ -59,15 +64,17 @@ mà không phụ thuộc vào người khác — lợi thế lớn về timeline
 ### 2.3 Cấu trúc thư mục ảnh
 
 ```
+
 finetune_data/
 └── raw_images/
-    ├── scan_001.png       ← đặt tên theo loại giúp debug dễ hơn
-    ├── scan_002.png
-    ├── phone_001.jpg
-    ├── phone_002.jpg
-    ├── photocopy_001.jpg
-    └── ...
-```
+├── scan_001.png ← đặt tên theo loại giúp debug dễ hơn
+├── scan_002.png
+├── phone_001.jpg
+├── phone_002.jpg
+├── photocopy_001.jpg
+└── ...
+
+````
 
 ---
 
@@ -81,18 +88,21 @@ bạn chỉ việc **sửa lại những chỗ sai** → tiết kiệm 70–80% 
 ```bash
 # Chạy với ngôn ngữ tiếng Việt
 PPOCRLabel --lang vi --kie True
-```
+````
 
 ### 3.2 Quy trình annotation từng bước
 
 **Bước a:** Mở thư mục ảnh
+
 - `File` → `Open Dir` → chọn thư mục `raw_images/`
 
 **Bước b:** Auto-annotation
+
 - Nhấn `Auto recognition` → PPOCRLabel tự nhận diện tất cả ảnh
 - Đây là bước tốn thời gian nhất (~2–5 giây/ảnh)
 
 **Bước c:** Kiểm tra và sửa từng ảnh
+
 - Duyệt qua từng ảnh trong danh sách bên trái
 - Với mỗi bounding box được highlight:
   - Nếu **text đúng** → bỏ qua
@@ -101,6 +111,7 @@ PPOCRLabel --lang vi --kie True
   - Nếu **box thừa** → chọn box → nhấn `Delete`
 
 **Bước d:** Lưu annotation
+
 - `File` → `Save` (hoặc Ctrl+S) sau mỗi ảnh
 
 > 💡 **Mẹo tốc độ:** Tập trung sửa những dòng chữ in đậm tiêu đề trước —
@@ -109,6 +120,7 @@ PPOCRLabel --lang vi --kie True
 ### 3.3 Export dataset cho Recognition
 
 Sau khi annotate xong:
+
 - `File` → `Export Recognition Result`
 - PPOCRLabel tự **crop từng dòng chữ** và tạo file label
 
@@ -124,6 +136,7 @@ finetune_data/
 ```
 
 Nội dung `rec_gt.txt`:
+
 ```
 crop_img/img_001_0.jpg	CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 crop_img/img_001_1.jpg	Độc lập - Tự do - Hạnh phúc
@@ -293,6 +306,7 @@ print(f"NED (Normalized Edit Distance): {result['norm_edit_dis']:.4f}")
 ```
 
 **Giải thích metrics:**
+
 - `acc` (Accuracy): % dòng chữ nhận diện **hoàn toàn đúng**
 - `norm_edit_dis` (NED): tương đương 1 - CER, càng gần 1 càng tốt
 
@@ -354,14 +368,14 @@ python compare_results.py
 
 ## Tóm tắt timeline (scope chữ in)
 
-| Ngày | Công việc | Ghi chú |
-|---|---|---|
-| Ngày 1 | Tạo dữ liệu giả + in/scan 80 ảnh đầu tiên | Chủ động 100%, không phụ thuộc ai |
-| Ngày 2 | Chụp điện thoại 80 ảnh + photocopy 40 ảnh | Hoàn thành bộ 260 ảnh |
-| Ngày 3 | Annotation bằng PPOCRLabel (~20 ảnh/giờ với chữ in) | Nhanh hơn 3x so với viết tay |
-| Ngày 4 sáng | Annotation nốt + split dataset + kiểm tra |  |
-| Ngày 4 chiều | Fine-tune Recognition model (2–4 giờ CPU) | |
-| Ngày 5 | Đánh giá + tích hợp vào project + test thực tế | Còn ~3 tuần buffer cho KIE, Validator, polish |
+| Ngày         | Công việc                                           | Ghi chú                                       |
+| ------------ | --------------------------------------------------- | --------------------------------------------- |
+| Ngày 1       | Tạo dữ liệu giả + in/scan 80 ảnh đầu tiên           | Chủ động 100%, không phụ thuộc ai             |
+| Ngày 2       | Chụp điện thoại 80 ảnh + photocopy 40 ảnh           | Hoàn thành bộ 260 ảnh                         |
+| Ngày 3       | Annotation bằng PPOCRLabel (~20 ảnh/giờ với chữ in) | Nhanh hơn 3x so với viết tay                  |
+| Ngày 4 sáng  | Annotation nốt + split dataset + kiểm tra           |                                               |
+| Ngày 4 chiều | Fine-tune Recognition model (2–4 giờ CPU)           |                                               |
+| Ngày 5       | Đánh giá + tích hợp vào project + test thực tế      | Còn ~3 tuần buffer cho KIE, Validator, polish |
 
 ---
 
@@ -378,6 +392,7 @@ python compare_results.py
 ## Roadmap sau 1 tháng (nếu muốn mở rộng)
 
 Sau khi hoàn thành scope chữ in, v2 có thể mở rộng thêm:
+
 - **Chữ viết tay** — cần thêm 3–4 tuần data collection + annotation
 - **Nhiều loại form** — mở rộng FIELD_KEYWORDS trong kie.py
 - **Batch processing** — xử lý nhiều ảnh cùng lúc
