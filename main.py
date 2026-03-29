@@ -17,7 +17,7 @@ from preprocess import preprocess_pipeline
 
 if __name__ == '__main__':
     # Dùng ảnh mặc định hoặc nhận từ tham số dòng lệnh
-    IMAGE_PATH = 'images/happy_case.png'
+    IMAGE_PATH = 'image_train/test_img/test.png'
 
     img = preprocess_pipeline(IMAGE_PATH)
     
