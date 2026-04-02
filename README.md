@@ -53,3 +53,24 @@ Xem `HUONG_DAN_FINETUNE.md` để biết hướng dẫn fine-tune model recognit
 - Annotation: PPOCRLabel
 - Train/Val split: 80/20 (seed=42)
 - Tổng: 5,427 mẫu crop text
+
+## Run function
+
+- main
+
+```
+Chạy lệnh: python main.py                    # Chế độ bình thường
+Hoặc:      python main.py --fast            # Chế độ nhanh (bỏ qua denoise & deskew)
+Hoặc:      python main.py images/file.jpg   # Chỉ định ảnh cụ thể
+```
+
+- evaluate_rec
+
+```
+python src/scripts/evaluate_rec.py
+
+Metrics:
+  - Accuracy (exact match): % mẫu dự đoán đúng hoàn toàn
+  - CER (Character Error Rate): tỷ lệ lỗi ở mức ký tự (càng thấp càng tốt)
+  - Confidence trung bình
+```

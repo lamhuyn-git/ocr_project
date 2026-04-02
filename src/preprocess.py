@@ -104,30 +104,28 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     img = cv2.imread(image_path)
     if img is None:
         raise FileNotFoundError(f"Không tìm thấy ảnh: {image_path}")
-    print(f"\nLoaded image successfully: {img.shape[1]}x{img.shape[0]}px\n")
+    print(f" [1/6] Loaded image successfully: {img.shape[1]}x{img.shape[0]}px\n")
 
     # print("[1/5] Detecting and fixing orientation...")
     # img = fix_orientation(img)
 
-    print("\n[1/4] Resizing image...")
+    print("[2/6] Resizing image...")
     img = resize_image(img)
 
-    print("\n[2/4] Correcting skew...")
+    print("[3/6] Correcting skew...")
     img = deskew(img)
 
-    print("\n[3/4] Removing noise...")
+    print("[4/6] Removing noise...")
     img = denoise(img)
 
-    print("\n[4/4] Enhancing contrast...")
+    print("[5/6] Enhancing contrast...")
     img = apply_clahe(img)
 
-    os.makedirs('outputs', exist_ok=True)
-    base_name = os.path.basename(image_path)
-    debug_path = f"outputs/debug_{base_name}"
+    name, ext = os.path.splitext(os.path.basename(image_path))
+    os.makedirs('outputs/preprocessing_results', exist_ok=True)
+    debug_path = f"outputs/preprocessing_results/{name}_result{ext}"
     cv2.imwrite(debug_path, img)
-    print(f"\nImage Debug saved in {debug_path}")
 
-    print("\n" + "=" * 45)
-    print(f"DONE PREPROCESSING! OUPTPUT: {img.shape[1]}x{img.shape[0]}px")
-    print("=" * 45)
+    print(f"[6/6] Done preprocessing! Save in  Saved in {debug_path}")
+    
     return img

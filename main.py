@@ -1,11 +1,3 @@
-"""
-main.py — Pipeline OCR chính
-=============================
-Chạy lệnh: python main.py                    # Chế độ bình thường
-Hoặc:      python main.py --fast            # Chế độ nhanh (bỏ qua denoise & deskew)
-Hoặc:      python main.py images/file.jpg   # Chỉ định ảnh cụ thể
-"""
-
 import os
 import sys
 
@@ -16,9 +8,16 @@ from ocr_engine import engine_pipeline
 from preprocess import preprocess_pipeline
 
 if __name__ == '__main__':
-    # Dùng ảnh mặc định hoặc nhận từ tham số dòng lệnh
-    IMAGE_PATH = 'image_train/test_img/test.png'
+    IMAGE_DIR  = 'image_test/scan'
+    EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 
-    img = preprocess_pipeline(IMAGE_PATH)
-    
-    engine_pipeline(img)
+    image_files = sorted([
+        f for f in os.listdir(IMAGE_DIR)
+        if os.path.splitext(f)[1].lower() in EXTENSIONS
+    ])
+
+    for filename in image_files:
+        img_path = os.path.join(IMAGE_DIR, filename)
+        print(f"\nProcessing: {filename}\n")
+        img = preprocess_pipeline(img_path)
+        engine_pipeline(img, img_path=img_path)

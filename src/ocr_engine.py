@@ -1,7 +1,3 @@
-"""
-ocr_engine.py — Nhận diện chữ trong ảnh dùng PaddleOCR
-"""
-
 import cv2
 import numpy as np
 import os
@@ -9,9 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 from paddleocr import PaddleOCR
 from typing import List, Dict
 
-# Biến toàn cục lưu instance OCR (tránh tạo lại nhiều lần)
 _ocr_instance = None
-
 
 def get_ocr_instance() -> PaddleOCR:
     global _ocr_instance
@@ -19,37 +13,30 @@ def get_ocr_instance() -> PaddleOCR:
         print("Initial PaddleOCR with fine-tuned model...")
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # rec_model_dir = os.path.join(project_root, 'output_mobile_rec_lite', 'inference')
-        rec_model_dir = os.path.join(project_root, 'output_rec', 'inference')
+        rec_model_dir = os.path.join(project_root, 'output_mobile_rec_lite', 'inference')
 
         if not os.path.exists(rec_model_dir):
             raise FileNotFoundError(
                 f"Inference model not found: {rec_model_dir}\n"
-                f"Please run export_model.py first!"
             )
 
         _ocr_instance = PaddleOCR(
             lang='vi',
             device='cpu',
-            # text_recognition_model_name='PP-OCRv5_mobile_rec',
-            text_recognition_model_name='PP-OCRv5_server_rec',
+            text_recognition_model_name='PP-OCRv5_mobile_rec',
             text_recognition_model_dir=rec_model_dir,
         )
         print("Initialized PaddleOCR with fine-tuned model successfully!\n")
     return _ocr_instance
 
-
 def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
-    print("Running OCR on the image...")
     raw_results = ocr.ocr(img)
 
     if not raw_results or raw_results[0] is None:
         print("Not found any text in the image!")
         return []
     
-    print(f"Raw OCR results: {raw_results[0]}")
 
-    # Paddleocr 3.x: lấy dữ liệu từ OCRResult object
     result     = raw_results[0]
     texts      = result['rec_texts']   # ['Họ và tên:', 'Nguyễn Văn A', ...]
     scores     = result['rec_scores']  # [0.97, 0.98, ...]
@@ -60,7 +47,6 @@ def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
         if not text.strip():
             continue
 
-        # bbox là numpy array shape (4, 2) → [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
         bbox_list = bbox.tolist()
         center_y  = sum(pt[1] for pt in bbox_list) / 4
         x_left    = min(pt[0] for pt in bbox_list)
@@ -73,28 +59,27 @@ def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
             'x_left':     x_left,
         })
 
-    parsed.sort(key=lambda x: (round(x['center_y'] / 20) * 20, x['x_left']))
+    # parsed.sort(key=lambda x: (round(x['center_y'] / 20) * 20, x['x_left']))
+    parsed.sort(key=lambda x: (x['center_y'], x['x_left']))
 
-    print(f"Find out {len(parsed)} text lines:\n")
+    print(f"Find out {len(parsed)} text lines:")
     for i, item in enumerate(parsed):
-        # conf_rate = "High" if item['confidence'] > 0.85 else if "⚠️ "
         if item['confidence'] >= 0.85:
             conf_rate = "High confidence"
         elif item['confidence'] >= 0.50 and item['confidence'] < 0.85:
             conf_rate = "Medium confidence"
         else:
             conf_rate = "Low confidence"
-        print(f"  {conf_rate} [{i+1:02d}] ({item['confidence']:.1%}) {item['text']}")
+        print(f"  [{i+1:02d}] ({item['confidence']:.1%}) {conf_rate} {item['text']}")
 
     return parsed
 
 def draw_bounding_boxes(img: np.ndarray, ocr_results: list) -> np.ndarray:
-    # Chuyển BGR (OpenCV) → RGB (Pillow)
+    # Vì dùng library PiLow nên cần chuyển kênh màu thành RGB
     img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw    = ImageDraw.Draw(img_pil)
 
     # Load font hỗ trợ tiếng Việt
-    # Dùng font hệ thống macOS có sẵn
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",  # macOS
         "/System/Library/Fonts/Arial.ttf",
@@ -108,6 +93,7 @@ def draw_bounding_boxes(img: np.ndarray, ocr_results: list) -> np.ndarray:
     if font is None:
         font = ImageFont.load_default()
 
+
     for item in ocr_results:
         bbox       = item['bbox']
         text       = item['text']
@@ -116,7 +102,7 @@ def draw_bounding_boxes(img: np.ndarray, ocr_results: list) -> np.ndarray:
         # Màu theo confidence
         if confidence >= 0.85:
             color = (0, 200, 0)      # Xanh lá
-        elif confidence >= 0.70:
+        elif confidence >= 0.65:
             color = (255, 180, 0)    # Vàng
         else:
             color = (220, 0, 0)      # Đỏ
@@ -125,7 +111,7 @@ def draw_bounding_boxes(img: np.ndarray, ocr_results: list) -> np.ndarray:
         pts = [(int(pt[0]), int(pt[1])) for pt in bbox]
         draw.polygon(pts, outline=color + (255,))
         for i in range(len(pts)):
-            draw.line([pts[i], pts[(i+1) % len(pts)]], fill=color, width=2)
+            draw.line([pts[i], pts[(i+1) % len(pts)]], fill=color, width=1)
 
         # Vẽ label phía trên box
         label    = f"{text} ({confidence:.0%})"
@@ -149,16 +135,6 @@ def draw_bounding_boxes(img: np.ndarray, ocr_results: list) -> np.ndarray:
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
 def filter_by_confidence(ocr_results: List[Dict], min_confidence: float = 0.75) -> List[Dict]:
-    """
-    Lọc bỏ các dòng OCR có độ tin cậy thấp
-
-    Args:
-        ocr_results: Kết quả từ run_ocr()
-        min_confidence: Ngưỡng tối thiểu (mặc định 75%)
-
-    Returns:
-        Danh sách đã lọc
-    """
     filtered = [r for r in ocr_results if r['confidence'] >= min_confidence]
     removed = len(ocr_results) - len(filtered)
     if removed > 0:
@@ -166,35 +142,33 @@ def filter_by_confidence(ocr_results: List[Dict], min_confidence: float = 0.75) 
     return filtered
 
 def get_text_lines(ocr_results: List[Dict]) -> List[str]:
-    """Lấy danh sách dòng text thuần (không kèm metadata)"""
     return [r['text'] for r in ocr_results]
 
-def engine_pipeline(img: np.ndarray) -> np.ndarray:
+def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
     print("\n" + "="*50)
     print("OCR ENGINE PIPELINE")
     print("="*50)
 
-    print("\n[1/3] Initializing OCR model...")
+    print("[1/4] Initializing OCR model...")
     ocr = get_ocr_instance()
 
-    print("\n[2/3] Running OCR...")
+    print("[2/4] Running OCR...")
     ocr_results = run_ocr(ocr, img)
 
     if not ocr_results:
         print("No text found!")
         return img  # Trả về ảnh gốc nếu không có kết quả
 
-    print("\n[3/3] Drawing bounding boxes...")
-    filtered      = filter_by_confidence(ocr_results, min_confidence=0.70)
+    print("[3/4] Drawing bounding boxes...")
+    filtered      = filter_by_confidence(ocr_results, min_confidence=0.5)
     annotated_img = draw_bounding_boxes(img, filtered)
 
-    print(f"Drew {len(filtered)} bounding boxes on image.")
+    # Lưu ảnh với tên gốc + _result
+    if img_path:
+        name, ext = os.path.splitext(os.path.basename(img_path))
+        out_path  = f'outputs/test_results/{name}_result{ext}'
 
-    # Lưu ảnh có bounding box
-    cv2.imwrite('outputs/ocr_result.jpg', annotated_img)
-    print("Saved: outputs/ocr_result.jpg")
+    cv2.imwrite(out_path, annotated_img)
+    print(f"[4/4] Saved in {out_path}")
 
-    print("\n" + "="*50)
-    print("DONE OCR ENGINE!")
-    print("="*50)
     return annotated_img
