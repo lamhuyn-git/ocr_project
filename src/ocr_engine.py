@@ -145,7 +145,7 @@ def get_text_lines(ocr_results: List[Dict]) -> List[str]:
     return [r['text'] for r in ocr_results]
 
 def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
-    print("\n" + "="*50)
+    print("="*50)
     print("OCR ENGINE PIPELINE")
     print("="*50)
 

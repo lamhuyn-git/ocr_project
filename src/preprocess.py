@@ -43,43 +43,37 @@ def resize_image(img: np.ndarray, max_width: int = 1920) -> np.ndarray:
 def deskew(img: np.ndarray) -> np.ndarray:
     gray  = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=100)
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=50)  # 100 → 50
 
     if lines is None:
         print("No straight lines detected for deskew")
-        result = img
+        return img
 
-    else:
-        angles = []
-        for line in lines[:20]:
-            rho, theta = line[0]
-            angle = np.degrees(theta) - 90
-            if abs(angle) < 45:
-                angles.append(angle)
+    angles = []
+    for line in lines[:50]:
+        rho, theta = line[0]
+        a = np.degrees(theta) - 90
+        if abs(a) < 45:
+            angles.append(a)
+        elif a < -45:          # near-vertical line → convert sang skew tương đương
+            angles.append(a + 90)
 
-        if not angles:
-            result = img
+    if not angles:
+        print("No valid angles found for deskew")
+        return img
 
-        else:
-            median_angle = np.median(angles)
+    median_angle = float(np.median(angles))
 
-            if abs(median_angle) < 0.5:
-                print("Ảnh gần thẳng, không cần xoay")
-                result = img
-            else:
-                print(f"Skew angle detected: {median_angle:.2f}°, correcting...")
-                h, w = img.shape[:2]
-                M = cv2.getRotationMatrix2D((w//2, h//2), median_angle, 1.0)
-                result = cv2.warpAffine(img, M, (w, h),
-                                        flags=cv2.INTER_CUBIC,
-                                        borderMode=cv2.BORDER_REPLICATE)
+    if abs(median_angle) < 0.5:
+        print("Image straight, not need rotate")
+        return img
 
-    return result
-
-def denoise(img: np.ndarray) -> np.ndarray:
-    denoised = cv2.fastNlMeansDenoisingColored(img, None, 5, 5, 7, 21)
-    print("Denoise successfully!")
-    return denoised
+    print(f"Skew angle detected: {median_angle:.2f}°, correcting...")
+    h, w = img.shape[:2]
+    M = cv2.getRotationMatrix2D((w//2, h//2), median_angle, 1.0)
+    return cv2.warpAffine(img, M, (w, h),
+                          flags=cv2.INTER_CUBIC,
+                          borderMode=cv2.BORDER_REPLICATE)
 
 def apply_clahe(img: np.ndarray) -> np.ndarray:
     # Chuyển sang không gian màu LAB
@@ -104,7 +98,7 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     img = cv2.imread(image_path)
     if img is None:
         raise FileNotFoundError(f"Không tìm thấy ảnh: {image_path}")
-    print(f" [1/6] Loaded image successfully: {img.shape[1]}x{img.shape[0]}px\n")
+    print(f"[1/6] Loaded image successfully: {img.shape[1]}x{img.shape[0]}px")
 
     # print("[1/5] Detecting and fixing orientation...")
     # img = fix_orientation(img)

@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import Counter
 
 # Thêm project root vào path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -8,15 +9,9 @@ sys.path.insert(0, PROJECT_ROOT)
 os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
 
 from paddlex import create_model
-from PIL import Image
-import numpy as np
 
 
-# ============================================================
-# CER (Character Error Rate) — dùng edit distance
-# ============================================================
-def edit_distance(s1: str, s2: str) -> int:
-    """Levenshtein distance giữa 2 chuỗi."""
+def edit_distance(s1, s2) -> int:
     m, n = len(s1), len(s2)
     dp = list(range(n + 1))
     for i in range(1, m + 1):
@@ -31,17 +26,80 @@ def edit_distance(s1: str, s2: str) -> int:
             prev = temp
     return dp[n]
 
-
 def compute_cer(pred: str, gt: str) -> float:
-    """CER = edit_distance / len(ground_truth). Trả về 0.0 nếu cả hai rỗng."""
     if len(gt) == 0:
         return 0.0 if len(pred) == 0 else 1.0
     return edit_distance(pred, gt) / len(gt)
 
+def compute_wer(pred: str, gt: str) -> float:
+    pred_words = pred.split()
+    gt_words   = gt.split()
+    if len(gt_words) == 0:
+        return 0.0 if len(pred_words) == 0 else 1.0
+    return edit_distance(pred_words, gt_words) / len(gt_words)
 
-# ============================================================
-# Load val data
-# ============================================================
+def compute_precision_recall(pred: str, gt: str) -> tuple:
+    """
+    Precision: Tỷ lệ đúng của predict (so với chính nó)
+    Recall: Tỷ lệ đúng của predict (so với GT)
+    """
+
+    pred_words = Counter(pred.split())
+    gt_words   = Counter(gt.split())
+
+    # Số từ đúng = giao của 2 counter (min của từng từ)
+    tp = sum((pred_words & gt_words).values())
+
+    total_pred = sum(pred_words.values())
+    total_gt   = sum(gt_words.values())
+
+    precision = tp / total_pred if total_pred > 0 else 0.0
+    recall    = tp / total_gt   if total_gt   > 0 else 0.0
+
+    return precision, recall
+
+def get_char_alignments(pred: str, gt: str) -> list:
+    m, n = len(gt), len(pred)
+
+    # Build full DP table
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(m + 1):
+        dp[i][0] = i
+    for j in range(n + 1):
+        dp[0][j] = j
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if gt[i - 1] == pred[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1]
+            else:
+                dp[i][j] = 1 + min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])
+
+    # Backtrack
+    substitutions = []
+    i, j = m, n
+    while i > 0 and j > 0:
+        if gt[i - 1] == pred[j - 1]:
+            i -= 1
+            j -= 1
+        elif dp[i][j] == dp[i - 1][j - 1] + 1:
+            # Substitution
+            substitutions.append((gt[i - 1], pred[j - 1]))
+            i -= 1
+            j -= 1
+        elif dp[i][j] == dp[i - 1][j] + 1:
+            # Deletion (GT char bị xóa)
+            i -= 1
+        else:
+            # Insertion (Pred char thừa)
+            j -= 1
+
+    return substitutions
+
+def update_confusion(confusion: dict, pred: str, gt: str):
+    for gt_char, pred_char in get_char_alignments(pred, gt):
+        key = (gt_char, pred_char)
+        confusion[key] = confusion.get(key, 0) + 1
+
 def load_val_data(val_label_path: str, base_dir: str):
     """Đọc file label, trả về list (image_path, ground_truth)."""
     samples = []
@@ -58,140 +116,133 @@ def load_val_data(val_label_path: str, base_dir: str):
             samples.append((img_path, gt_text))
     return samples
 
-
-# ============================================================
-# Đánh giá
-# ============================================================
 def evaluate(model_dir: str, model_name: str, val_samples: list):
-    """Chạy OCR trên từng ảnh crop và so sánh với ground truth."""
+    print(f"Evaluate model: {model_name}")
+    print(f"Model dir: {model_dir}")
+    print(f"The number of valuation samples: {len(val_samples)}")
 
-    print(f"\n{'='*60}")
-    print(f"  Đánh giá model: {model_name}")
-    print(f"  Model dir: {model_dir}")
-    print(f"  Số mẫu val: {len(val_samples)}")
-    print(f"{'='*60}\n")
-
-    # Dùng PaddleX create_model để load trực tiếp model recognition
     model = create_model(model_name, model_dir=model_dir)
 
-    total = len(val_samples)
-    exact_match = 0
-    total_cer = 0.0
+    total            = len(val_samples)
+    exact_match      = 0
+    total_cer        = 0.0
+    total_wer        = 0.0
+    total_precision  = 0.0
+    total_recall     = 0.0
     total_confidence = 0.0
-    errors = []
+    confusion        = {}
+    errors           = []
 
     for idx, (img_path, gt_text) in enumerate(val_samples):
         if not os.path.exists(img_path):
             continue
 
-        # Chạy recognition trực tiếp
-        pred_text = ""
+        pred_text  = ""
         confidence = 0.0
         try:
             results = list(model.predict(img_path))
             if results:
-                pred_text = results[0].get('rec_text', '')
+                pred_text  = results[0].get('rec_text', '')
                 confidence = results[0].get('rec_score', 0.0)
         except Exception as e:
             print(f"  Error on {img_path}: {e}")
 
         pred_text = pred_text.strip()
-        gt_text = gt_text.strip()
+        gt_text   = gt_text.strip()
 
         # Tính metrics
-        is_match = (pred_text == gt_text)
-        cer = compute_cer(pred_text, gt_text)
+        is_match          = (pred_text == gt_text)
+        cer               = compute_cer(pred_text, gt_text)
+        wer               = compute_wer(pred_text, gt_text)
+        precision, recall = compute_precision_recall(pred_text, gt_text)
 
         if is_match:
             exact_match += 1
-        total_cer += cer
-        total_confidence += confidence
+        total_cer       += cer
+        total_wer       += wer
+        total_precision += precision
+        total_recall    += recall
+        total_confidence+= confidence
+
+        # Cập nhật confusion matrix
+        update_confusion(confusion, pred_text, gt_text)
 
         # Lưu lỗi để phân tích
         if not is_match:
             errors.append({
-                'file': os.path.basename(img_path),
-                'gt': gt_text,
-                'pred': pred_text,
-                'cer': cer,
+                'file':       os.path.basename(img_path),
+                'gt':         gt_text,
+                'pred':       pred_text,
+                'cer':        cer,
+                'wer':        wer,
                 'confidence': confidence,
             })
 
         # Progress
         if (idx + 1) % 100 == 0 or (idx + 1) == total:
-            print(f"  [{idx+1}/{total}] Accuracy: {exact_match/(idx+1):.1%}  |  CER: {total_cer/(idx+1):.4f}")
+            print(f"  [{idx+1}/{total}] Accuracy: {exact_match/(idx+1):.1%}  |  "
+                  f"CER: {total_cer/(idx+1):.4f}  |  WER: {total_wer/(idx+1):.4f}")
 
     # ============================================================
     # Kết quả tổng hợp
     # ============================================================
-    accuracy = exact_match / total if total > 0 else 0
-    avg_cer = total_cer / total if total > 0 else 0
-    avg_conf = total_confidence / total if total > 0 else 0
+    accuracy     = exact_match / total if total > 0 else 0
+    avg_cer      = total_cer       / total if total > 0 else 0
+    avg_wer      = total_wer       / total if total > 0 else 0
+    avg_precision= total_precision / total if total > 0 else 0
+    avg_recall   = total_recall    / total if total > 0 else 0
+    avg_conf     = total_confidence/ total if total > 0 else 0
 
-    print(f"\n{'='*60}")
-    print(f"  KẾT QUẢ: {model_name}")
-    print(f"{'='*60}")
     print(f"  Accuracy (exact match) : {accuracy:.2%}  ({exact_match}/{total})")
     print(f"  CER (Character Error)  : {avg_cer:.4f}  ({avg_cer:.2%})")
+    print(f"  WER (Word Error)       : {avg_wer:.4f}  ({avg_wer:.2%})")
+    print(f"  Precision (word-level) : {avg_precision:.4f}  ({avg_precision:.2%})")
+    print(f"  Recall    (word-level) : {avg_recall:.4f}  ({avg_recall:.2%})")
     print(f"  Confidence trung bình  : {avg_conf:.4f}  ({avg_conf:.2%})")
-    print(f"{'='*60}\n")
 
-    # Top 20 lỗi nặng nhất
+    # Top 20 lỗi nặng nhất (theo CER)
     errors.sort(key=lambda x: x['cer'], reverse=True)
     print(f"  Top 20 lỗi nặng nhất:")
-    print(f"  {'File':<40} {'CER':>6} {'Conf':>6}")
-    print(f"  {'-'*52}")
+    print(f"  {'File':<40} {'CER':>6} {'WER':>6} {'Conf':>6}")
+    print(f"  {'-'*58}")
     for e in errors[:20]:
-        print(f"  {e['file']:<40} {e['cer']:>5.2f} {e['confidence']:>5.2f}")
+        print(f"  {e['file']:<40} {e['cer']:>5.2f} {e['wer']:>5.2f} {e['confidence']:>5.2f}")
         print(f"    GT:   {e['gt'][:80]}")
         print(f"    Pred: {e['pred'][:80]}")
         print()
 
+    # Top 15 cặp ký tự bị nhầm nhiều nhất (Confusion Matrix)
+    sorted_confusion = sorted(confusion.items(), key=lambda x: x[1], reverse=True)
+    print(f"  Top 15 Confusion Pairs (GT → Pred):")
+    print(f"  {'GT':>5} → {'Pred':<5}  {'Count':>6}")
+    print(f"  {'-'*25}")
+    for (gt_char, pred_char), count in sorted_confusion[:15]:
+        print(f"  {repr(gt_char):>5} → {repr(pred_char):<5}  {count:>6}")
+
     return {
-        'model': model_name,
-        'accuracy': accuracy,
-        'cer': avg_cer,
+        'model':          model_name,
+        'accuracy':       accuracy,
+        'cer':            avg_cer,
+        'wer':            avg_wer,
+        'precision':      avg_precision,
+        'recall':         avg_recall,
         'avg_confidence': avg_conf,
-        'total': total,
-        'exact_match': exact_match,
-        'num_errors': len(errors),
+        'total':          total,
+        'exact_match':    exact_match,
+        'num_errors':     len(errors),
+        'confusion':      confusion,
     }
 
-
-# ============================================================
-# Main
-# ============================================================
 if __name__ == '__main__':
     VAL_LABEL = os.path.join(PROJECT_ROOT, 'image_train', 'val', 'rec_gt_val.txt')
-    BASE_DIR = os.path.join(PROJECT_ROOT, 'image_train')
+    BASE_DIR  = os.path.join(PROJECT_ROOT, 'image_train')
 
     val_samples = load_val_data(VAL_LABEL, BASE_DIR)
     print(f"Loaded {len(val_samples)} val samples")
 
-    # --- Model 1: PP-OCRv5_mobile_rec (lightweight) ---
     mobile_dir = os.path.join(PROJECT_ROOT, 'output_mobile_rec_lite', 'inference')
     if os.path.exists(mobile_dir):
         result_mobile = evaluate(mobile_dir, 'PP-OCRv5_mobile_rec', val_samples)
     else:
         print(f"SKIP: {mobile_dir} not found")
         result_mobile = None
-
-    # --- Model 2: PP-OCRv5_server_rec (heavy) ---
-    server_dir = os.path.join(PROJECT_ROOT, 'output_rec', 'inference')
-    if os.path.exists(server_dir):
-        result_server = evaluate(server_dir, 'PP-OCRv5_server_rec', val_samples)
-    else:
-        print(f"SKIP: {server_dir} not found (chưa có, sẽ đánh giá sau)")
-        result_server = None
-
-    # --- So sánh ---
-    if result_mobile and result_server:
-        print(f"\n{'='*60}")
-        print(f"  SO SÁNH 2 MODEL")
-        print(f"{'='*60}")
-        print(f"  {'Metric':<25} {'Mobile':>12} {'Server':>12}")
-        print(f"  {'-'*49}")
-        print(f"  {'Accuracy':<25} {result_mobile['accuracy']:>11.2%} {result_server['accuracy']:>11.2%}")
-        print(f"  {'CER':<25} {result_mobile['cer']:>11.4f} {result_server['cer']:>11.4f}")
-        print(f"  {'Confidence':<25} {result_mobile['avg_confidence']:>11.4f} {result_server['avg_confidence']:>11.4f}")
-        print(f"{'='*60}")

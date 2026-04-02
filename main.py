@@ -8,16 +8,20 @@ from ocr_engine import engine_pipeline
 from preprocess import preprocess_pipeline
 
 if __name__ == '__main__':
-    IMAGE_DIR  = 'image_test/scan'
-    EXTENSIONS = {'.jpg', '.jpeg', '.png'}
+    # IMAGE_DIR  = 'image_test/phone_bad'
+    # EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 
-    image_files = sorted([
-        f for f in os.listdir(IMAGE_DIR)
-        if os.path.splitext(f)[1].lower() in EXTENSIONS
-    ])
+    # image_files = sorted([
+    #     f for f in os.listdir(IMAGE_DIR)
+    #     if os.path.splitext(f)[1].lower() in EXTENSIONS
+    # ])
 
-    for filename in image_files:
-        img_path = os.path.join(IMAGE_DIR, filename)
-        print(f"\nProcessing: {filename}\n")
-        img = preprocess_pipeline(img_path)
-        engine_pipeline(img, img_path=img_path)
+    # for filename in image_files:
+    #     img_path = os.path.join(IMAGE_DIR, filename)
+    #     print(f"\nProcessing: {filename}\n")
+    #     img = preprocess_pipeline(img_path)
+    #     engine_pipeline(img, img_path=img_path)
+    
+    img_path = 'image_test/phone_low/phone_low_006.jpg'
+    img = preprocess_pipeline(img_path)
+    engine_pipeline(img, img_path=img_path)
