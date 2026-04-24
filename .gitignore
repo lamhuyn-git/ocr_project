@@ -285,6 +285,7 @@ image_train/crop_img/
 image_train/rec_gt.txt
 image_train/train/
 image_train/val/
+image_train/synth/
 
 # OCR model weights & training artifacts
 output_rec/

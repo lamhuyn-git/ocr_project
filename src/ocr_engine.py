@@ -13,7 +13,7 @@ def get_ocr_instance() -> PaddleOCR:
         print("Initial PaddleOCR with fine-tuned model...")
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        rec_model_dir = os.path.join(project_root, 'output_mobile_rec_lite', 'inference')
+        rec_model_dir = os.path.join(project_root, 'output_rec', 'inference')
 
         if not os.path.exists(rec_model_dir):
             raise FileNotFoundError(
@@ -23,7 +23,7 @@ def get_ocr_instance() -> PaddleOCR:
         _ocr_instance = PaddleOCR(
             lang='vi',
             device='cpu',
-            text_recognition_model_name='PP-OCRv5_mobile_rec',
+            text_recognition_model_name='PP-OCRv5_server_rec',
             text_recognition_model_dir=rec_model_dir,
         )
         print("Initialized PaddleOCR with fine-tuned model successfully!\n")

@@ -110,7 +110,7 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     img = deskew(img)
 
     print("[4/6] Removing noise...")
-    img = denoise(img)
+    # img = denoise(img)
 
     print("[5/6] Enhancing contrast...")
     img = apply_clahe(img)

@@ -1,5 +1,6 @@
 import os
 import sys
+import unicodedata
 from collections import Counter
 
 # Thêm project root vào path
@@ -147,8 +148,9 @@ def evaluate(model_dir: str, model_name: str, val_samples: list):
         except Exception as e:
             print(f"  Error on {img_path}: {e}")
 
-        pred_text = pred_text.strip()
-        gt_text   = gt_text.strip()
+        # Chuẩn hóa Unicode NFC để tránh lỗi combining diacritics (NFD vs NFC)
+        pred_text = unicodedata.normalize('NFC', pred_text.strip())
+        gt_text   = unicodedata.normalize('NFC', gt_text.strip())
 
         # Tính metrics
         is_match          = (pred_text == gt_text)
@@ -240,9 +242,38 @@ if __name__ == '__main__':
     val_samples = load_val_data(VAL_LABEL, BASE_DIR)
     print(f"Loaded {len(val_samples)} val samples")
 
-    mobile_dir = os.path.join(PROJECT_ROOT, 'output_mobile_rec_lite', 'inference')
-    if os.path.exists(mobile_dir):
-        result_mobile = evaluate(mobile_dir, 'PP-OCRv5_mobile_rec', val_samples)
-    else:
-        print(f"SKIP: {mobile_dir} not found")
-        result_mobile = None
+    models_to_eval = [
+        ('mobile_lite (baseline)', os.path.join(PROJECT_ROOT, 'output_mobile_rec_lite', 'inference'),        'PP-OCRv5_mobile_rec'),
+        ('mobile_new_db (new)',    os.path.join(PROJECT_ROOT, 'output_rec_mobile_new_db', 'inference'), 'PP-OCRv5_mobile_rec'),
+    ]
+
+    results = {}
+    for label, model_dir, model_name in models_to_eval:
+        if os.path.exists(model_dir):
+            results[label] = evaluate(model_dir, model_name, val_samples)
+        else:
+            print(f"SKIP: {model_dir} not found")
+
+    # So sánh kết quả nếu chạy cả 2
+    if len(results) == 2:
+        keys = list(results.keys())
+        m, s = results[keys[0]], results[keys[1]]
+        print("\n" + "=" * 60)
+        print(f"  SO SÁNH: {keys[0]}  vs  {keys[1]}")
+        print("=" * 60)
+        print(f"  {'Chỉ số':<25} {keys[0]:>20} {keys[1]:>20} {'Winner':>10}")
+        print(f"  {'-'*77}")
+        for key, label, higher_better in [
+            ('accuracy',       'Accuracy',       True),
+            ('cer',            'CER',            False),
+            ('wer',            'WER',            False),
+            ('precision',      'Precision',      True),
+            ('recall',         'Recall',         True),
+            ('avg_confidence', 'Confidence TB',  True),
+        ]:
+            mv, sv = m[key], s[key]
+            if higher_better:
+                winner = keys[1] if sv > mv else (keys[0] if mv > sv else 'Tie')
+            else:
+                winner = keys[1] if sv < mv else (keys[0] if mv < sv else 'Tie')
+            print(f"  {label:<25} {mv:>20.4f} {sv:>20.4f} {winner:>10}")
