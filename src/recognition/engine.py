@@ -7,7 +7,8 @@ import numpy as np
 from paddleocr import PaddleOCR
 from typing import List, Dict
 
-from recognition.visualize import draw_bounding_boxes
+from .visualize import draw_bounding_boxes
+from kie.block_merger import merge_blocks
 
 _ocr_instance = None
 
@@ -29,8 +30,14 @@ def get_ocr_instance() -> PaddleOCR:
         _ocr_instance = PaddleOCR(
             lang='vi',
             device='cpu',
-            text_recognition_model_name='PP-OCRv5_server_rec',
+            # Use mobile detection to keep memory within MacBook Air limits
+            text_detection_model_name='PP-OCRv5_mobile_det',
+            text_recognition_model_name='PP-OCRv5_mobile_rec',
             text_recognition_model_dir=rec_model_dir,
+            # Preprocessing pipeline already handles orientation/unwarping
+            use_doc_orientation_classify=False,
+            use_textline_orientation=False,
+            use_doc_unwarping=False,
         )
         print("Initialized PaddleOCR with fine-tuned model successfully!\n")
     return _ocr_instance
@@ -107,16 +114,23 @@ def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
         print("No text found!")
         return img
 
-    print("[3/4] Drawing bounding boxes...")
-    filtered      = filter_by_confidence(ocr_results, min_confidence=0.5)
-    annotated_img = draw_bounding_boxes(img, filtered)
+    print("[3/4] Merging blocks & drawing bounding boxes...")
+    filtered = filter_by_confidence(ocr_results, min_confidence=0.5)
+    merged   = merge_blocks(filtered)
+    print(f"  Before merge: {len(filtered)} blocks → After merge: {len(merged)} blocks")
+
+    before_img = draw_bounding_boxes(img.copy(), filtered)
+    after_img  = draw_bounding_boxes(img.copy(), merged)
 
     if img_path:
         name, ext = os.path.splitext(os.path.basename(img_path))
         out_dir   = 'outputs/test_results'
         os.makedirs(out_dir, exist_ok=True)
-        out_path  = f'{out_dir}/{name}_result{ext}'
-        cv2.imwrite(out_path, annotated_img)
-        print(f"[4/4] Saved in {out_path}")
 
-    return annotated_img
+        before_path = f'{out_dir}/{name}_before_merge{ext}'
+        after_path  = f'{out_dir}/{name}_after_merge{ext}'
+        cv2.imwrite(before_path, before_img)
+        cv2.imwrite(after_path, after_img)
+        print(f"[4/4] Saved:\n  Before: {before_path}\n  After:  {after_path}")
+
+    return after_img

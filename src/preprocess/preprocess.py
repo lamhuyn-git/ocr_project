@@ -30,14 +30,24 @@ import numpy as np
 
 #     return img
 
-def resize_image(img: np.ndarray, max_width: int = 1920) -> np.ndarray:
+def resize_image(img: np.ndarray, 
+                 max_width: int = 1920, 
+                 min_width: int = 800) -> np.ndarray:
     h, w = img.shape[:2]
-    if w <= max_width:
-        return img
-    ratio = max_width / w
-    new_h = int(h * ratio)
-    img = cv2.resize(img, (max_width, new_h), interpolation=cv2.INTER_AREA)
-    print(f"Resize successfully: {img.shape}")
+
+    if w > max_width:
+        ratio = max_width / w
+        img = cv2.resize(img, (max_width, int(h * ratio)), interpolation=cv2.INTER_AREA)
+        print(f"Resized (down): {w}px → {img.shape[1]}px")
+
+    elif w < min_width:
+        ratio = min_width / w
+        img = cv2.resize(img, (min_width, int(h * ratio)), interpolation=cv2.INTER_CUBIC)
+        print(f"Resized (up): {w}px → {img.shape[1]}px. Note: Upscaling may reduce quality.")
+
+    else:
+        print(f"Good size, no resize needed: {w}×{h}px")
+
     return img
 
 def deskew(img: np.ndarray) -> np.ndarray:
