@@ -111,7 +111,7 @@ def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
 
     print("[3/4] Merging blocks & drawing bounding boxes...")
     filtered  = filter_by_confidence(ocr_results)
-    h_merged  = merge_blocks_horizontal(filtered,  img_width=img.shape[1])
+    h_merged  = merge_blocks_horizontal(filtered,  img_width=img.shape[1], img_height=img.shape[0])
     merged    = merge_blocks_vertical(h_merged,    img_height=img.shape[0])
     print(f"  Before merge: {len(filtered)} → After horizontal: {len(h_merged)} → After vertical: {len(merged)} blocks")
 
@@ -123,8 +123,8 @@ def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
         out_dir   = 'outputs/test_results'
         os.makedirs(out_dir, exist_ok=True)
 
-        before_path = f'{out_dir}/{name}_before_merge{ext}'
-        after_path  = f'{out_dir}/{name}_after_merge{ext}'
+        before_path = f'{out_dir}/{name}_before_merge_v2{ext}'
+        after_path  = f'{out_dir}/{name}_after_merge_v2{ext}'
         cv2.imwrite(before_path, before_img)
         cv2.imwrite(after_path, after_img)
         print(f"[4/4] Saved:\n  Before: {before_path}\n  After:  {after_path}")

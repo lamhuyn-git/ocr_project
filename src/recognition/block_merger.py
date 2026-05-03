@@ -5,13 +5,18 @@ def get_xmax(block: Dict) -> float:
     return max(pt[0] for pt in block['bbox'])
 
 
+def _block_height(block: Dict) -> float:
+    ys = [pt[1] for pt in block['bbox']]
+    return max(ys) - min(ys)
+
+
 def x_overlaps(a: Dict, b: Dict) -> bool:
     return a['x_left'] <= get_xmax(b) and b['x_left'] <= get_xmax(a)
 
 
-def get_thresholds_horizontal(img_width: int) -> tuple:
+def get_thresholds_horizontal(img_width: int,img_height: int ) -> tuple:
     print(f"Calculating thresholds based on image width: {img_width}px")
-    same_line = img_width * 0.03
+    same_line = img_height * 0.02
     max_gap   = img_width * 0.02
     print(f"  Same line threshold (y-axis): {same_line:.1f}px")
     print(f"  Max gap for merging (x-axis): {max_gap:.1f}px")
@@ -48,7 +53,7 @@ def merge_two(a: Dict, b: Dict) -> Dict:
 
 
 def get_threshold_vertical(img_height: int) -> float:
-    threshold = img_height * 0.02
+    threshold = img_height * 0.023
     print(f"  Vertical adjacent-line threshold (y-axis): {threshold:.1f}px")
     return threshold
 
@@ -93,12 +98,12 @@ def merge_blocks_vertical(blocks: List[Dict], img_height: int) -> List[Dict]:
     return result
 
 
-def merge_blocks_horizontal(blocks: List[Dict], img_width: int) -> List[Dict]:
+def merge_blocks_horizontal(blocks: List[Dict], img_width: int, img_height:int) -> List[Dict]:
     print("Merging blocks horizontally...")
     if not blocks:
         return blocks
 
-    same_line_threshold, max_gap_merge = get_thresholds_horizontal(img_width=img_width)
+    same_line_threshold, max_gap_merge = get_thresholds_horizontal(img_width=img_width, img_height=img_height)
     changed = True
     
     print(f"Initial blocks before horizontal merge: {blocks}")
@@ -125,7 +130,10 @@ def merge_blocks_horizontal(blocks: List[Dict], img_width: int) -> List[Dict]:
                     break
 
                 gap = abs(nxt['x_left'] - get_xmax(current))
-                if gap > max_gap_merge:
+                # Scale max_gap by block height so table-cell digits (tall relative
+                # to their gap) merge correctly without inflating global threshold.
+                dynamic_gap = max(max_gap_merge, _block_height(current) * 1.2)
+                if gap > dynamic_gap:
                     continue
                 current = merge_two(current, nxt)
                 skip.add(j)
