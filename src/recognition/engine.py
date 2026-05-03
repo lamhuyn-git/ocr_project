@@ -1,6 +1,3 @@
-"""
-engine.py — PaddleOCR wrapper + recognition pipeline
-"""
 import os
 import cv2
 import numpy as np
@@ -8,7 +5,7 @@ from paddleocr import PaddleOCR
 from typing import List, Dict
 
 from .visualize import draw_bounding_boxes
-from kie.block_merger import merge_blocks
+from recognition.block_merger import merge_blocks_horizontal, merge_blocks_vertical
 
 _ocr_instance = None
 
@@ -100,9 +97,7 @@ def get_text_lines(ocr_results: List[Dict]) -> List[str]:
 
 
 def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
-    print("=" * 50)
     print("OCR ENGINE PIPELINE")
-    print("=" * 50)
 
     print("[1/4] Initializing OCR model...")
     ocr = get_ocr_instance()
@@ -115,9 +110,10 @@ def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
         return img
 
     print("[3/4] Merging blocks & drawing bounding boxes...")
-    filtered = filter_by_confidence(ocr_results, min_confidence=0.5)
-    merged   = merge_blocks(filtered)
-    print(f"  Before merge: {len(filtered)} blocks → After merge: {len(merged)} blocks")
+    filtered  = filter_by_confidence(ocr_results)
+    h_merged  = merge_blocks_horizontal(filtered,  img_width=img.shape[1])
+    merged    = merge_blocks_vertical(h_merged,    img_height=img.shape[0])
+    print(f"  Before merge: {len(filtered)} → After horizontal: {len(h_merged)} → After vertical: {len(merged)} blocks")
 
     before_img = draw_bounding_boxes(img.copy(), filtered)
     after_img  = draw_bounding_boxes(img.copy(), merged)

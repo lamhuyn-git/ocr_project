@@ -2,7 +2,7 @@ from typing import Dict, List
 from .keyword_matcher import match_keyword
 from .spatial_lookup  import find_value
 from .validator       import validate_and_clean
-from .block_merger    import merge_blocks
+from ..recognition.block_merger    import merge_blocks_horizontal
 
 
 def extract_ct01(ocr_blocks: List[Dict]) -> Dict:
@@ -23,7 +23,9 @@ def extract_ct01(ocr_blocks: List[Dict]) -> Dict:
     }
 
     # Gộp block bị break trước khi chạy KIE
-    merged_blocks = merge_blocks(ocr_blocks)
+    # Tính img_width từ tọa độ x lớn nhất trong các block
+    img_width = max(pt[0] for b in ocr_blocks for pt in b['bbox']) if ocr_blocks else 1000
+    merged_blocks = merge_blocks_horizontal(ocr_blocks, img_width=img_width)
     print(f"KIE merge from {len(ocr_blocks)} blocks to {len(merged_blocks)} blocks.")
     
     # seen_fields = set()

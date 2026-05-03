@@ -8,10 +8,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from recognition.engine import engine_pipeline
 from preprocess import preprocess_pipeline
-from kie.kie import extract_ct01
 
 if __name__ == '__main__':
-    # IMAGE_DIR  = 'image_test/scan'
+    # IMAGE_DIR  = 'image_test/phone_good'
     # EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 
     # image_files = sorted([
@@ -21,11 +20,10 @@ if __name__ == '__main__':
 
     # for filename in image_files:
     #     img_path = os.path.join(IMAGE_DIR, filename)
-    #     print(f"\nProcessing: {filename}\n")
     #     img = preprocess_pipeline(img_path)
-    #     engine_pipeline(img, img_path=img_path)
+    #     ocr_results = engine_pipeline(img, img_path=img_path)
     
-    img_path = 'image_test/phone_good/phone_good_001.jpg'
+    img_path = 'image_test/scan/scan_001.jpg'
     img = preprocess_pipeline(img_path)
     ocr_results = engine_pipeline(img, img_path=img_path)
     print("\nOCR Results:", ocr_results)

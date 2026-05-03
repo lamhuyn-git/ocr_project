@@ -1,6 +1,3 @@
-"""
-preprocess.py — Tiền xử lý ảnh trước khi đưa vào OCR
-"""
 import os
 import cv2
 import numpy as np
@@ -30,20 +27,18 @@ import numpy as np
 
 #     return img
 
-def resize_image(img: np.ndarray, 
-                 max_width: int = 1920, 
-                 min_width: int = 800) -> np.ndarray:
+def resize_image(img: np.ndarray, max_width: int = 1920, min_width: int = 800) -> np.ndarray:
     h, w = img.shape[:2]
 
     if w > max_width:
         ratio = max_width / w
         img = cv2.resize(img, (max_width, int(h * ratio)), interpolation=cv2.INTER_AREA)
-        print(f"Resized (down): {w}px → {img.shape[1]}px")
+        print(f"Resized (down) from {w}px to {img.shape[1]}px")
 
     elif w < min_width:
         ratio = min_width / w
         img = cv2.resize(img, (min_width, int(h * ratio)), interpolation=cv2.INTER_CUBIC)
-        print(f"Resized (up): {w}px → {img.shape[1]}px. Note: Upscaling may reduce quality.")
+        print(f"Resized (up) from {w}px to {img.shape[1]}px. Note: Upscaling may reduce quality.")
 
     else:
         print(f"Good size, no resize needed: {w}×{h}px")
@@ -101,13 +96,11 @@ def apply_clahe(img: np.ndarray) -> np.ndarray:
     return result  
 
 def preprocess_pipeline(image_path: str) -> np.ndarray:
-    print("=" * 45)
     print("PREPROCESSING PIPELINE")
-    print("=" * 45)
 
     img = cv2.imread(image_path)
     if img is None:
-        raise FileNotFoundError(f"Không tìm thấy ảnh: {image_path}")
+        raise FileNotFoundError(f"Image not found: {image_path}")
     print(f"[1/6] Loaded image successfully: {img.shape[1]}x{img.shape[0]}px")
 
     # print("[1/5] Detecting and fixing orientation...")
