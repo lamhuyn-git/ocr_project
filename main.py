@@ -1,29 +1,31 @@
 import os
 import sys
+import cv2
 
-from more_itertools import extract
-
-# Thêm thư mục src vào Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from recognition.engine import engine_pipeline
-from preprocess import preprocess_pipeline
+from ocr.engine   import run_ocr_pipeline
+from ocr.visualize import draw_bounding_boxes
+from preprocess   import preprocess_pipeline
+from kie.kie      import kie
 
 if __name__ == '__main__':
-    # IMAGE_DIR  = 'image_test/phone_good'
-    # EXTENSIONS = {'.jpg', '.jpeg', '.png'}
+    img_path = 'image_test/scan/scan_002.jpg'
+    base     = os.path.splitext(os.path.basename(img_path))[0]
 
-    # image_files = sorted([
-    #     f for f in os.listdir(IMAGE_DIR)
-    #     if os.path.splitext(f)[1].lower() in EXTENSIONS
-    # ])
-
-    # for filename in image_files:
-    #     img_path = os.path.join(IMAGE_DIR, filename)
-    #     img = preprocess_pipeline(img_path)
-    #     ocr_results = engine_pipeline(img, img_path=img_path)
-    
-    img_path = 'image_test/scan/scan_001.jpg'
+    print("PREPROCESSING")
     img = preprocess_pipeline(img_path)
-    ocr_results = engine_pipeline(img, img_path=img_path)
-    print("\nOCR Results:", ocr_results)
+
+    print("RUN OCR")
+    img, ocr_blocks = run_ocr_pipeline(img)
+
+    os.makedirs('outputs/test_results', exist_ok=True)
+    save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
+    cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
+
+    print("RUN KIE")
+    kie_result = kie(ocr_blocks, img=img)
+    print('\n[KIE Result]')
+    for field, value in kie_result.items():
+        if value:
+            print(f"  {field}: {value}")

@@ -10,7 +10,7 @@ Mỗi field có hàm clean riêng phù hợp với đặc thù dữ liệu.
 import re
 from typing import Callable, Dict, Optional
 
-from .keyword_matcher import normalize
+from .find_label import normalize
 
 
 # ── Hàm clean cho từng loại field ───────────────────────────────
@@ -22,9 +22,11 @@ def clean_title(text: str) -> Optional[str]:
 
 
 def clean_cccd(text: str) -> Optional[str]:
-    """CCCD/CMND: đúng 12 chữ số."""
-    digits = re.sub(r'\D', '', text)
-    return digits if len(digits) == 12 else None
+    """CCCD/CMND: đúng 12 chữ số thuần. Trả về None nếu thiếu ký tự hoặc có ô trắng ('_')."""
+    cleaned = re.sub(r'[^\d_]', '', text)
+    if len(cleaned) != 12 or '_' in cleaned:
+        return None
+    return cleaned
 
 
 def clean_phone(text: str) -> Optional[str]:

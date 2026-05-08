@@ -45,6 +45,7 @@ def resize_image(img: np.ndarray, max_width: int = 1920, min_width: int = 800) -
 
     return img
 
+
 def deskew(img: np.ndarray) -> np.ndarray:
     gray  = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
@@ -60,7 +61,7 @@ def deskew(img: np.ndarray) -> np.ndarray:
         a = np.degrees(theta) - 90
         if abs(a) < 45:
             angles.append(a)
-        elif a < -45:          # near-vertical line → convert sang skew tương đương
+        elif a < -45:
             angles.append(a + 90)
 
     if not angles:
@@ -76,11 +77,10 @@ def deskew(img: np.ndarray) -> np.ndarray:
     print(f"Skew angle detected: {median_angle:.2f}°, correcting...")
     h, w = img.shape[:2]
     M = cv2.getRotationMatrix2D((w//2, h//2), median_angle, 1.0)
-    return cv2.warpAffine(img, M, (w, h),
-                          flags=cv2.INTER_CUBIC,
-                          borderMode=cv2.BORDER_REPLICATE)
+    return cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
 
-def apply_clahe(img: np.ndarray) -> np.ndarray:
+
+def clahe(img: np.ndarray) -> np.ndarray:
     # Chuyển sang không gian màu LAB
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
@@ -93,11 +93,10 @@ def apply_clahe(img: np.ndarray) -> np.ndarray:
     merged = cv2.merge((cl, a, b))
     result = cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
     print("Improve clahe successfully!")
-    return result  
+    return result
+
 
 def preprocess_pipeline(image_path: str) -> np.ndarray:
-    print("PREPROCESSING PIPELINE")
-
     img = cv2.imread(image_path)
     if img is None:
         raise FileNotFoundError(f"Image not found: {image_path}")
@@ -116,7 +115,7 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     # img = denoise(img)
 
     print("[5/6] Enhancing contrast...")
-    img = apply_clahe(img)
+    img = clahe(img)
 
     name, ext = os.path.splitext(os.path.basename(image_path))
     os.makedirs('outputs/preprocessing_results', exist_ok=True)

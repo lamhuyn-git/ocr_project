@@ -1,11 +1,10 @@
 import os
-import cv2
 import numpy as np
 from paddleocr import PaddleOCR
 from typing import List, Dict
 
 from .visualize import draw_bounding_boxes
-from recognition.block_merger import merge_blocks_horizontal, merge_blocks_vertical
+from .block_merger import merge_blocks_horizontal, merge_blocks_vertical
 
 _ocr_instance = None
 
@@ -72,19 +71,19 @@ def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
     parsed.sort(key=lambda x: (x['center_y'], x['x_left']))
 
     print(f"Find out {len(parsed)} text lines:")
-    for i, item in enumerate(parsed):
-        if item['confidence'] >= 0.85:
-            conf_rate = "High confidence"
-        elif item['confidence'] >= 0.50:
-            conf_rate = "Medium confidence"
-        else:
-            conf_rate = "Low confidence"
-        print(f"  [{i+1:02d}] ({item['confidence']:.1%}) {conf_rate} {item['text']}")
+    # for i, item in enumerate(parsed):
+    #     if item['confidence'] >= 0.85:
+    #         conf_rate = "High confidence"
+    #     elif item['confidence'] >= 0.50:
+    #         conf_rate = "Medium confidence"
+    #     else:
+    #         conf_rate = "Low confidence"
+    #     print(f"  [{i+1:02d}] ({item['confidence']:.1%}) {conf_rate} {item['text']}")
 
     return parsed
 
 
-def filter_by_confidence(ocr_results: List[Dict], min_confidence: float = 0.75) -> List[Dict]:
+def filter_by_confidence(ocr_results: List[Dict], min_confidence: float = 0.65) -> List[Dict]:
     filtered = [r for r in ocr_results if r['confidence'] >= min_confidence]
     removed = len(ocr_results) - len(filtered)
     if removed > 0:
@@ -96,37 +95,14 @@ def get_text_lines(ocr_results: List[Dict]) -> List[str]:
     return [r['text'] for r in ocr_results]
 
 
-def engine_pipeline(img: np.ndarray, img_path: str = None) -> np.ndarray:
-    print("OCR ENGINE PIPELINE")
+def run_ocr_pipeline(img: np.ndarray) -> tuple:
+    ocr          = get_ocr_instance()
+    raw_results  = run_ocr(ocr, img)
+    if not raw_results:
+        return img, []
 
-    print("[1/4] Initializing OCR model...")
-    ocr = get_ocr_instance()
-
-    print("[2/4] Running OCR...")
-    ocr_results = run_ocr(ocr, img)
-
-    if not ocr_results:
-        print("No text found!")
-        return img
-
-    print("[3/4] Merging blocks & drawing bounding boxes...")
-    filtered  = filter_by_confidence(ocr_results)
-    h_merged  = merge_blocks_horizontal(filtered,  img_width=img.shape[1], img_height=img.shape[0])
-    merged    = merge_blocks_vertical(h_merged,    img_height=img.shape[0])
-    print(f"  Before merge: {len(filtered)} → After horizontal: {len(h_merged)} → After vertical: {len(merged)} blocks")
-
-    before_img = draw_bounding_boxes(img.copy(), filtered)
-    after_img  = draw_bounding_boxes(img.copy(), merged)
-
-    if img_path:
-        name, ext = os.path.splitext(os.path.basename(img_path))
-        out_dir   = 'outputs/test_results'
-        os.makedirs(out_dir, exist_ok=True)
-
-        before_path = f'{out_dir}/{name}_before_merge_v2{ext}'
-        after_path  = f'{out_dir}/{name}_after_merge_v2{ext}'
-        cv2.imwrite(before_path, before_img)
-        cv2.imwrite(after_path, after_img)
-        print(f"[4/4] Saved:\n  Before: {before_path}\n  After:  {after_path}")
-
-    return after_img
+    filtered_results = filter_by_confidence(raw_results)
+    merged_horizontal_results = merge_blocks_horizontal(filtered_results,  img_width=img.shape[1], img_height=img.shape[0])
+    merged_vertical_results = merge_blocks_vertical(merged_horizontal_results,    img_height=img.shape[0])
+    
+    return img, merged_vertical_results
