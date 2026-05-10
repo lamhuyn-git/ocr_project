@@ -10,22 +10,51 @@ from preprocess   import preprocess_pipeline
 from kie.kie      import kie
 
 if __name__ == '__main__':
-    img_path = 'image_test/scan/scan_002.jpg'
-    base     = os.path.splitext(os.path.basename(img_path))[0]
+    # img_path = 'image_test/scan/scan_002.jpg'
+    # base     = os.path.splitext(os.path.basename(img_path))[0]
 
-    print("PREPROCESSING")
-    img = preprocess_pipeline(img_path)
+    # print("PREPROCESSING")
+    # img = preprocess_pipeline(img_path)
 
-    print("RUN OCR")
-    img, ocr_blocks = run_ocr_pipeline(img)
+    # print("RUN OCR")
+    # img, ocr_blocks = run_ocr_pipeline(img)
 
-    os.makedirs('outputs/test_results', exist_ok=True)
-    save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
-    cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
+    # os.makedirs('outputs/test_results', exist_ok=True)
+    # save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
+    # cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
 
-    print("RUN KIE")
-    kie_result = kie(ocr_blocks, img=img)
-    print('\n[KIE Result]')
-    for field, value in kie_result.items():
-        if value:
-            print(f"  {field}: {value}")
+    # print("RUN KIE")
+    # kie_result = kie(ocr_blocks, img=img)
+    # print('\n[KIE Result]')
+    # for field, value in kie_result.items():
+    #     if value:
+    #         print(f"  {field}: {value}")
+
+
+    IMAGE_DIR  = 'image_test/scan'
+    EXTENSIONS = {'.jpg', '.jpeg', '.png'}
+
+    image_files = sorted([
+        f for f in os.listdir(IMAGE_DIR)
+        if os.path.splitext(f)[1].lower() in EXTENSIONS
+    ])
+
+
+    for filename in image_files:
+        img_path = os.path.join(IMAGE_DIR, filename)
+        base = os.path.splitext(os.path.basename(img_path))[0]
+        
+        print("PREPROCESSING")
+        img = preprocess_pipeline(img_path)
+
+        print("RUN OCR")
+        img, ocr_blocks = run_ocr_pipeline(img)
+
+        os.makedirs('outputs/test_results', exist_ok=True)
+        save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
+        cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
+
+        print("RUN KIE")
+        kie_result = kie(ocr_blocks, img=img)
+    
+

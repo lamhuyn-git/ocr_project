@@ -305,3 +305,9 @@ image_test/
 
 # img_train
 image_train/
+
+# plan
+plans/
+
+# model
+models/
