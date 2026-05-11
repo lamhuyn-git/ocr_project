@@ -15,12 +15,12 @@ def get_ocr_instance() -> PaddleOCR:
         print("Initial PaddleOCR with fine-tuned model...")
 
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        rec_model_dir = os.path.join(project_root, 'models', 'recognition', 'inference')
+        rec_model_dir = os.path.join(project_root, 'models', 'inference')
 
         if not os.path.exists(rec_model_dir):
             raise FileNotFoundError(
                 f"Inference model not found: {rec_model_dir}\n"
-                f"Expected {rec_model_dir} to exist — check plan step C."
+                f"Expected models/inference/ to exist — export checkpoint via Kaggle export_model.py first."
             )
 
         _ocr_instance = PaddleOCR(

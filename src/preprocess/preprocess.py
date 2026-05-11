@@ -115,7 +115,7 @@ def preprocess_pipeline(image_path: str) -> np.ndarray:
     # img = denoise(img)
 
     print("[5/6] Enhancing contrast...")
-    img = clahe(img)
+    # img = clahe(img)
 
     name, ext = os.path.splitext(os.path.basename(image_path))
     os.makedirs('outputs/preprocessing_results', exist_ok=True)
