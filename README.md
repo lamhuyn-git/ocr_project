@@ -53,6 +53,7 @@ Xem `HUONG_DAN_FINETUNE.md` để biết hướng dẫn fine-tune model recognit
 - Annotation: PPOCRLabel
 - Train/Val split: 80/20 (seed=42)
 - Tổng: 5,427 mẫu crop text
+<!--  PPOCRLabel --lang vi -->
 
 ## Run function
 

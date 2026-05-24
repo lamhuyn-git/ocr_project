@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #         print(f"  {field}: {value}")
 
 
-    IMAGE_DIR  = 'image_test/scan'
+    IMAGE_DIR  = 'test_image'
     EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 
     image_files = sorted([

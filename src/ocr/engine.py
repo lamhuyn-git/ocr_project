@@ -101,8 +101,8 @@ def run_ocr_pipeline(img: np.ndarray) -> tuple:
     if not raw_results:
         return img, []
 
-    filtered_results = filter_by_confidence(raw_results)
-    merged_horizontal_results = merge_blocks_horizontal(filtered_results,  img_width=img.shape[1], img_height=img.shape[0])
-    merged_vertical_results = merge_blocks_vertical(merged_horizontal_results,    img_height=img.shape[0])
-    
-    return img, merged_vertical_results
+    filtered_results = filter_by_confidence(raw_results, min_confidence=0.5)
+    # merged_horizontal_results = merge_blocks_horizontal(filtered_results,  img_width=img.shape[1], img_height=img.shape[0])
+    # merged_vertical_results = merge_blocks_vertical(merged_horizontal_results,    img_height=img.shape[0])
+
+    return img, filtered_results

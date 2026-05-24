@@ -19,12 +19,12 @@ from src.preprocess.preprocess import preprocess_pipeline
 from src.evaluation.metrics import cer, wer, exact_match, bbox_iou, aggregate_metrics
 
 # Paths
-TEST_DIR   = PROJECT_ROOT / "image_train" / "test"
-LABEL_FILE = TEST_DIR / "Label.txt"
-OUTPUT_DIR = PROJECT_ROOT / "outputs" / "evaluation"
+TEST_DIR   = PROJECT_ROOT / "test_image"
+LABEL_FILE = TEST_DIR / "label_test.txt"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 # Pattern nhận diện quality bucket từ tên file
-BUCKET_PATTERN = re.compile(r"^(scan|phone_good|phone_low)")
+BUCKET_PATTERN = re.compile(r"^(scan_hand|phone_good_hand|phone_low_hand|scan|phone_good|phone_low)")
 
 
 # Covert from label.txt to JSON
@@ -98,14 +98,16 @@ def match_regions(pred_blocks: list[dict], gt_regions: list[dict],iou_threshold:
     return matched
 
 
-def evaluate_form(entry: dict, iou_threshold: float) -> dict | None:
-    # Tìm file ảnh dựa trên form_path trong entry
-    img_path = TEST_DIR.parent / entry["form_path"]
+def evaluate_form(entry: dict, iou_threshold: float, image_dir: Path | None = None, result_dir: str = "outputs/test_results") -> dict | None:
+    fname = Path(entry["form_path"]).name
+    if image_dir:
+        img_path = image_dir / fname
+    else:
+        img_path = PROJECT_ROOT / entry["form_path"]
+        if not img_path.exists():
+            img_path = TEST_DIR / fname
     if not img_path.exists():
-        # thử trực tiếp trong test dir
-        img_path = TEST_DIR / Path(entry["form_path"]).name
-    if not img_path.exists():
-        print(f"Not found the img with path: {entry['form_path']} in {TEST_DIR} or {TEST_DIR.parent}")
+        print(f"Not found the img with path: {fname} in {image_dir or PROJECT_ROOT}")
         return None
 
     # preprocess_pipeline nhận file path (str), không phải numpy array
@@ -114,9 +116,9 @@ def evaluate_form(entry: dict, iou_threshold: float) -> dict | None:
     # Chạy OCR pipeline
     _, ocr_blocks = run_ocr_pipeline(img_pre)
 
-    os.makedirs('outputs/test_results', exist_ok=True)
+    os.makedirs(result_dir, exist_ok=True)
     save_img = draw_bounding_boxes(img_pre, ocr_blocks)
-    cv2.imwrite(f'outputs/test_results/{Path(entry["form_path"]).stem}_ocr_result.jpg', save_img)
+    cv2.imwrite(f'{result_dir}/{Path(entry["form_path"]).stem}_ocr_result.jpg', save_img)
     
     gt_regions  = entry["regions"] # Lấy GT regions từ entry
     n_gt        = len(gt_regions)
@@ -139,7 +141,20 @@ def evaluate_form(entry: dict, iou_threshold: float) -> dict | None:
     }
 
 
-def print_report(results: list[dict]) -> None:
+def _read_model_name() -> str:
+    """Đọc model_name từ inference.yml, fallback về tên thư mục."""
+    try:
+        import yaml
+        yml = PROJECT_ROOT / "models" / "inference" / "inference.yml"
+        if yml.exists():
+            data = yaml.safe_load(yml.read_text(encoding="utf-8"))
+            return data.get("Global", {}).get("model_name", "unknown")
+    except Exception:
+        pass
+    return "unknown"
+
+
+def print_report(results: list[dict], model_label: str = "") -> None:
     """In báo cáo tổng hợp ra terminal."""
     from collections import defaultdict
 
@@ -147,11 +162,14 @@ def print_report(results: list[dict]) -> None:
     for r in results:
         by_group[r["quality"]].append(r)
 
+    model_name = _read_model_name()
+    display = f"{model_name} ({model_label})" if model_label else model_name
+
     print("\n" + "=" * 65)
     print(f"{'OCR EVALUATION REPORT':^65}")
     print("=" * 65)
-    print(f"  Model  : PP-OCRv5_mobile_rec v5 (epoch 42, val_acc=73.5%)")
-    print(f"  Test   : image_train/test/Label.txt — {len(results)} forms")
+    print(f"  Model  : {display}")
+    print(f"  Test   : {LABEL_FILE.relative_to(PROJECT_ROOT)} — {len(results)} forms")
     print("=" * 65)
 
     header = f"{'Group':<12} {'N':>3} {'DetRate':>8} {'CER mean':>9} {'CER std':>8} {'WER mean':>9} {'EM Rate':>8}"
@@ -159,7 +177,7 @@ def print_report(results: list[dict]) -> None:
     print("-" * 65)
 
     all_records = []
-    for group in ["scan", "phone_good", "phone_low", "phone_bad"]:
+    for group in ["scan", "phone_good", "phone_low", "scan_hand", "phone_good_hand", "phone_low_hand"]:
         forms = by_group.get(group, [])
         if not forms:
             continue
@@ -204,13 +222,24 @@ def main():
                     help="Lưu raw results ra JSON file (vd. outputs/eval_results.json)")
     ap.add_argument("--no-pairs",      action="store_true",
                     help="Bỏ matched_pairs khỏi output JSON (tiết kiệm dung lượng)")
+    ap.add_argument("--image-dir",     default=None,
+                    help="Folder chứa ảnh form (vd. image_test/). Mặc định resolve từ Label.txt path")
+    ap.add_argument("--model-label",   default="",
+                    help="Nhãn model hiển thị trong report (vd. v7, v8-domain)")
+    ap.add_argument("--label-file",    default=None,
+                    help="Path tới Label.txt tuỳ chỉnh (mặc định: test_image/label_test.txt)")
+    ap.add_argument("--result-dir",    default=None,
+                    help="Folder lưu ảnh kết quả OCR (mặc định: outputs/test_results)")
     args = ap.parse_args()
 
-    if not LABEL_FILE.exists():
-        raise SystemExit(f"GT file not found: {LABEL_FILE}")
+    label_file = Path(args.label_file) if args.label_file else LABEL_FILE
+    if not label_file.exists():
+        raise SystemExit(f"GT file not found: {label_file}")
+
+    result_dir = args.result_dir or "outputs/test_results"
 
     # Parse label.txt thành JSON entries
-    entries = parse_label_txt(LABEL_FILE)
+    entries = parse_label_txt(label_file)
     # Nếu có truyền group vào terminal thì chỉ lấy các entries của group đó để evaluate
     if args.group:
         entries = [e for e in entries if e["quality"] == args.group]
@@ -219,11 +248,13 @@ def main():
 
     print(f"Evaluating {len(entries)} forms with IoU threshold={args.iou_threshold} ...")
 
+    image_dir = Path(args.image_dir) if args.image_dir else None
+
     results = []
     for i, entry in enumerate(entries, 1):
         form_name = Path(entry["form_path"]).stem  #chỉ lấy phần tên file, bỏ đi thư mục và đuôi mở rộng
         print(f"\n[{i:02d}/{len(entries):02d}] {form_name} ({entry['quality']})")
-        result = evaluate_form(entry, args.iou_threshold)
+        result = evaluate_form(entry, args.iou_threshold, image_dir, result_dir)
         if result:
             if args.no_pairs:
                 result.pop("matched_pairs", None)
@@ -239,7 +270,7 @@ def main():
         print("Không có kết quả nào.")
         return
 
-    print_report(results)
+    print_report(results, model_label=args.model_label)
 
     if args.output:
         out_path = Path(args.output)
