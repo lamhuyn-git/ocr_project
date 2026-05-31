@@ -1,0 +1,19 @@
+Đây là kêt quả chạy evaluate-ocrpy bằng model-v8-checkpoint (model version 8 đầu tiên)
+Input: 
+- real form chưa từng xuất hiện trước giờ (Công Sinh viết)
+- Chất lượng: scan_hand
+Output:
+
+Find out 45 text lines:
+  GT=17 | Pred=45 | Matched=16 | DetRate=94.1%
+  CER=14.9%  WER=27.0%  EM=50.0%  (n=16)
+
+=================================================================
+                      OCR EVALUATION REPORT                      
+=================================================================
+  Model  : PP-OCRv5_mobile_rec (v8)
+  Test   : test_image/label_test.txt — 1 forms
+=================================================================
+Group          N  DetRate  CER mean  CER std  WER mean  EM Rate
+-----------------------------------------------------------------
+=================================================================
