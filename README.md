@@ -69,6 +69,15 @@ Hoặc:      python main.py images/file.jpg   # Chỉ định ảnh cụ thể
 
 ```
 python src/scripts/evaluate_rec.py
+python src/evaluation/evaluate-ocr.py --model-label "v9" --output outputs/eval_results_v9.json
+python src/evaluation/evaluate-ocr.py --model-label "v8" --output outputs/eval_results_v8.json
+
+python src/evaluation/evaluate-ocr.py \
+  --label-file real_test/Label.txt \
+  --image-dir real_test \
+  --output real_test/outputs/eval_results_v9.json \
+  --result-dir real_test/outputs/test_results \
+  --model-label "v9"
 
 Metrics:
   - Accuracy (exact match): % mẫu dự đoán đúng hoàn toàn

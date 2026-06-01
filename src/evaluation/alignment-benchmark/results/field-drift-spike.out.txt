@@ -1,0 +1,24 @@
+template (canonical): 1654x2339  aspect=1.4141 (A4=1.414)
+
+ORB homography fail: 0/67  
+anchor không tìm thấy (theo field): {'f1_hoten': 0, 'f2_ngaysinh': 0, 'f4_cccd': 0, 'f5_sdt': 0, 'f10_noidung': 0}
+
+=== ORB: độ tản vị trí field trong canonical (px) ===
+field            n   std_x   std_y  max_dev
+-------------------------------------------
+f1_hoten        67     5.2     8.9     47.9
+f2_ngaysinh     67     4.0     9.8     50.0
+f4_cccd         67     2.6     4.7     23.3
+f5_sdt          67     3.7     8.4     47.3
+f10_noidung     67     4.7    19.2     98.1
+WORST max_dev across fields:      98.1 px
+
+=== RESIZE-only (baseline): độ tản vị trí field trong canonical (px) ===
+field            n   std_x   std_y  max_dev
+-------------------------------------------
+f1_hoten        67    30.6    37.9    158.9
+f2_ngaysinh     67    30.6    38.3    158.5
+f4_cccd         67    31.2    40.8    187.3
+f5_sdt          67    30.6    39.3    165.6
+f10_noidung     67    30.7    38.0    127.1
+WORST max_dev across fields:     187.3 px

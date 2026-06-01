@@ -1,0 +1,7 @@
+images: 67   crashed: 0 
+method: {'orb': 67}
+rot:    {0: 67}
+reproj_error px: mean=1.64 median=1.64 max=2.37
+inliers:         mean=161 min=96 max=253
+alignment success (method=orb): 67/67 = 100.0%
+overlay blends saved to /Users/trulem/Documents/ocr_project/outputs/alignment_debug/
