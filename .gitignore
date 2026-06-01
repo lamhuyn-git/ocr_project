@@ -234,12 +234,13 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# # Project-specific ignores
-# # Output files from OCR processing
-# outputs/*
-# !outputs/.gitkeep
+# ── Project-specific ignores ──
 
-# Temporary image files
+# Claude Code local (personal) settings
+.claude/settings.local.json
+
+# Scratch / spike files (e.g. tmp_orb_spike.py)
+tmp_*.py
 temp_images/
 *.tmp
 
@@ -297,20 +298,23 @@ output_mobile_rec_lite/
 *.pdiparams
 *.pdmodel
 
-# OCR output results
+# OCR output results (incl. nested ones like real_test/outputs/)
 outputs/
 
-# Test images
+# Datasets / images (backed up elsewhere, e.g. Kaggle)
 image_test/
-
-# img_train
 image_train/
+test_image/
+added_data/
+
+# Alignment debug overlays
+**/_spike_*.jpg
 
 # plan
 plans/
 
-# model
+# model weights & artifacts
 models/
 
-#tokens
+# tokens / secrets
 tokens.txt
