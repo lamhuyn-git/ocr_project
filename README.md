@@ -99,6 +99,6 @@ Metrics:
 ## Dataset
 
 - Nguồn ảnh gốc: backup trên Kaggle
-- Annotation: PPOCRLabel (`PPOCRLabel --lang vi`)
+- Annotation: PPOCRLabel (`/Users/macm2/Library/Python/3.9/bin/PPOCRLabel --lang vi`)
 - Train/Val split: 80/20 (seed=42)
 - Tổng: ~5,427 mẫu crop text

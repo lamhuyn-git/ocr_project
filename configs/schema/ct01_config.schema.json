@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ct01_config.schema.json",
+  "title": "CT01 form config schema",
+  "description": "Schema cho config Region Of Interest (ROI) normalized của một biểu mẫu (CT01). Cấu trúc config này được thiết kế để dễ dàng mở rộng trong tương lai khi cần thêm các loại field mới, hoặc các tham số mới cho field.",
+  "type": "object",
+  "required": ["version", "form_id", "canonical_size", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "description": "Đây là phiên bản config. Dùng để tương thích ngược khi có thay đổi cấu trúc config trong tương lai. Hiện tại version=1.",
+      "type": "string",
+      "minLength": 1
+    },
+    "form_id": {
+      "description": "Định danh của biểu mẫu, phải khớp danh mục các form được định nghĩa trong forms_manifest.yaml.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "canonical_size": {
+      "description": "Kích thước khung canonical (px) mà ROI normalized tham chiếu tới. Khớp Phase 01.",
+      "type": "object",
+      "required": ["width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "quality_overrides": {
+      "description": "Hệ số padding cho từng chất lượng ảnh (căn cứ lấy từ Phase 01 estimate_quality). Chất lượng ảnh càng tệ thì giá trị padding càng rộng.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "good": { "$ref": "#/$defs/override" },
+        "medium": { "$ref": "#/$defs/override" },
+        "poor": { "$ref": "#/$defs/override" }
+      }
+    },
+    "fields": {
+      "description": "Tên các field này phải khớp với src/kie/kie.py.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    }
+  },
+  "$defs": {
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "padding_scale": {
+          "description": "Nhân padding_x/padding_y gốc của field với hệ số này sẽ được padding thực tế.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "roi_norm": {
+      "description": "Vùng chứa field được normalize trong khoảng [0,1]. Tọa độ không tính bằng pixel, mà bằng tỉ lệ so với kích thước khung chuẩn (1654×2339). 0.42 nghĩa là 42% chiều rộng tính từ trái. Điểm (x,y) là góc trên-bên-trái của hình chữ nhật; w,h là chiều rộng/cao của nó.",
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "w": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "h": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["type", "roi_norm"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "description": "Loại field quyết định cách Phase 03 đọc trong ROI.",
+          "type": "string",
+          "enum": ["text_line", "text_block", "number", "table"]
+        },
+        "roi_norm": { "$ref": "#/$defs/roi_norm" },
+        "padding_x": {
+          "description": "Nới ROI theo trục x (px tuyệt đối trên canonical), bù jitter align + chữ viết lố.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "padding_y": {
+          "description": "Nới ROI theo trục y (px tuyệt đối trên canonical).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      }
+    }
+  }
+}

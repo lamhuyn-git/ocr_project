@@ -1,0 +1,8 @@
+# Map form_id -> đường dẫn config template (tương đối với gốc project).
+# Thêm CT02+ về sau bằng cách bổ sung entry mới — loader/extractor tra theo form_id.
+
+forms:
+  ct01:
+    name: "Tờ Khai Thay Đổi Thông Tin Cư Trú (CT01)"
+    config: configs/templates/ct01_v1.0.yaml
+    canonical_size: { width: 1654, height: 2339 }

@@ -1,0 +1,104 @@
+version: "1.0"
+form_id: ct01
+canonical_size:
+  width: 1654
+  height: 2339
+
+quality_overrides:
+  good:
+    padding_scale: 1.0
+  medium:
+    padding_scale: 1.25
+  poor:
+    padding_scale: 1.6
+
+fields:
+  title:
+    type: text_block
+    roi_norm: { x: 0.2443, y: 0.0628, w: 0.5544, h: 0.0428 }
+    padding_x: 10
+    padding_y: 4
+
+  national_header:
+    type: text_block
+    roi_norm: { x: 0.2817, y: 0.1184, w: 0.4849, h: 0.0398 }
+    padding_x: 10
+    padding_y: 4
+
+  form_name:
+    type: text_line
+    roi_norm: { x: 0.3035, y: 0.1779, w: 0.4377, h: 0.0184 }
+    padding_x: 6
+    padding_y: 4
+
+  kinh_gui:
+    type: text_line
+    roi_norm: { x: 0.283, y: 0.1975, w: 0.6197, h: 0.0363 }
+    padding_x: 6
+    padding_y: 4
+
+  ho_chu_dem_va_ten:
+    type: text_line
+    roi_norm: { x: 0.3307, y: 0.2223, w: 0.5732, h: 0.0385 }
+    padding_x: 6
+    padding_y: 4
+
+  ngay_thang_nam_sinh:
+    type: text_line
+    roi_norm: { x: 0.3525, y: 0.2493, w: 0.3368, h: 0.0321 }
+    padding_x: 8
+    padding_y: 4
+
+  gioi_tinh:
+    type: text_line
+    roi_norm: { x: 0.8204, y: 0.2488, w: 0.0822, h: 0.0321 }
+    padding_x: 12
+    padding_y: 4
+
+  so_dinh_dan_ca_nhan:
+    type: number
+    roi_norm: { x: 0.4401, y: 0.2835, w: 0.4456, h: 0.0295 }
+    padding_x: 8
+    padding_y: 4
+
+  so_dien_thoai_lien_he:
+    type: number
+    roi_norm: { x: 0.3537, y: 0.3151, w: 0.2582, h: 0.0312 }
+    padding_x: 6
+    padding_y: 4
+
+  email:
+    type: text_line
+    roi_norm: { x: 0.6935, y: 0.3155, w: 0.2521, h: 0.0321 }
+    padding_x: 12
+    padding_y: 4
+
+  ho_chu_dem_va_ten_chu_ho:
+    type: text_line
+    roi_norm: { x: 0.4039, y: 0.3356, w: 0.1717, h: 0.0342 }
+    padding_x: 4
+    padding_y: 4
+
+  moi_quan_he_voi_chu_ho:
+    type: text_line
+    roi_norm: { x: 0.812, y: 0.3369, w: 0.1324, h: 0.0329 }
+    padding_x: 6
+    padding_y: 4
+
+  so_dinh_dan_ca_nhan_cua_chu_ho:
+    type: number
+    roi_norm: { x: 0.4807, y: 0.3711, w: 0.416, h: 0.0316 }
+    padding_x: 8
+    padding_y: 4
+
+  noi_dung_de_nghi:
+    type: text_block
+    roi_norm: { x: 0.1409, y: 0.404, w: 0.8035, h: 0.0522 }
+    padding_x: 14
+    padding_y: 2
+
+  thanh_vien_cung_thay_doi:
+    type: table
+    roi_norm: { x: 0.1439, y: 0.4853, w: 0.7594, h: 0.2625 }
+    padding_x: 10
+    padding_y: 4

@@ -1,0 +1,137 @@
+[
+  {
+    "title": "title",
+    "roi_norm": {
+      "x": 0.2443,
+      "y": 0.0628,
+      "w": 0.5544,
+      "h": 0.0428
+    }
+  },
+  {
+    "title": "national_header",
+    "roi_norm": {
+      "x": 0.2817,
+      "y": 0.1184,
+      "w": 0.4849,
+      "h": 0.0398
+    }
+  },
+  {
+    "title": "kinh_gui",
+    "roi_norm": {
+      "x": 0.283,
+      "y": 0.1975,
+      "w": 0.6197,
+      "h": 0.0363
+    }
+  },
+  {
+    "title": "form_name",
+    "roi_norm": {
+      "x": 0.3035,
+      "y": 0.1779,
+      "w": 0.4377,
+      "h": 0.0184
+    }
+  },
+  {
+    "title": "ho_chu_dem_va_ten",
+    "roi_norm": {
+      "x": 0.3307,
+      "y": 0.2223,
+      "w": 0.5732,
+      "h": 0.0385
+    }
+  },
+  {
+    "title": "ngay_thang_nam_sinh",
+    "roi_norm": {
+      "x": 0.3525,
+      "y": 0.2493,
+      "w": 0.3368,
+      "h": 0.0321
+    }
+  },
+  {
+    "title": "gioi_tinh",
+    "roi_norm": {
+      "x": 0.8204,
+      "y": 0.2488,
+      "w": 0.0822,
+      "h": 0.0321
+    }
+  },
+  {
+    "title": "so_dinh_dan_ca_nhan",
+    "roi_norm": {
+      "x": 0.4401,
+      "y": 0.2835,
+      "w": 0.4456,
+      "h": 0.0295
+    }
+  },
+  {
+    "title": "so_dien_thoai_lien_he",
+    "roi_norm": {
+      "x": 0.3537,
+      "y": 0.3151,
+      "w": 0.2582,
+      "h": 0.0312
+    }
+  },
+  {
+    "title": "ho_chu_dem_va_ten_chu_ho",
+    "roi_norm": {
+      "x": 0.4039,
+      "y": 0.3356,
+      "w": 0.1717,
+      "h": 0.0342
+    }
+  },
+  {
+    "title": "email",
+    "roi_norm": {
+      "x": 0.6935,
+      "y": 0.3155,
+      "w": 0.2521,
+      "h": 0.0321
+    }
+  },
+  {
+    "title": "moi_quan_he_voi_chu_ho",
+    "roi_norm": {
+      "x": 0.812,
+      "y": 0.3369,
+      "w": 0.1324,
+      "h": 0.0329
+    }
+  },
+  {
+    "title": "so_dinh_dan_ca_nhan_cua_chu_ho",
+    "roi_norm": {
+      "x": 0.4807,
+      "y": 0.3711,
+      "w": 0.416,
+      "h": 0.0316
+    }
+  },
+  {
+    "title": "noi_dung_de_nghi",
+    "roi_norm": {
+      "x": 0.1409,
+      "y": 0.404,
+      "w": 0.8035,
+      "h": 0.0522
+    }
+  },
+  {
+    "title": "thanh_vien_cung_thay_doi",
+    "roi_norm": {
+      "x": 0.1439,
+      "y": 0.4853,
+      "w": 0.7594,
+      "h": 0.2625
+    }
+  }
+]
