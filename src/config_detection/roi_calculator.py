@@ -7,7 +7,7 @@ def pixels_to_roi_norm(
     points: Sequence[Sequence[int]],
     canvas_w: int,
     canvas_h: int,
-) -> dict[str, float]:
+) -> dict:
     if not points:
         raise ValueError("points cannot be empty")
     if canvas_w <= 0 or canvas_h <= 0:
@@ -15,8 +15,12 @@ def pixels_to_roi_norm(
 
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
-    x1, y1 = min(xs), min(ys)
-    x2, y2 = max(xs), max(ys)
+
+    x1 = min(xs)
+    y1 = min(ys)
+    x2 = max(xs)
+    y2 = max(ys)
+
     return {
         "x": x1 / canvas_w,
         "y": y1 / canvas_h,
@@ -41,6 +45,7 @@ def roi_norm_to_pixels(
     y1 = max(0, int(round(y1)))
     x2 = min(canvas_w, int(round(x2)))
     y2 = min(canvas_h, int(round(y2)))
+
     return x1, y1, x2, y2
 
 
@@ -51,10 +56,12 @@ def field_roi_pixels(
     canvas_h: int,
     quality: Optional[str] = None,
 ) -> Tuple[int, int, int, int]:
-    cfg = apply_quality_overrides(config, quality)
-    if field_name not in cfg["fields"]:
+
+    config = apply_quality_overrides(config, quality)
+    if field_name not in config["fields"]:
         raise KeyError(f"Field '{field_name}' not found in config.")
-    field = cfg["fields"][field_name]
+    field = config["fields"][field_name]
+
     return roi_norm_to_pixels(
         field["roi_norm"],
         field.get("padding_x", 0),

@@ -102,3 +102,6 @@ fields:
     roi_norm: { x: 0.1439, y: 0.4853, w: 0.7594, h: 0.2625 }
     padding_x: 10
     padding_y: 4
+    table:
+      header_h_frac: 0.20   # bỏ ~20% đầu (hàng tiêu đề cột) khi xét nội dung
+      min_ink: 60           # mực tối thiểu (sau khử kẻ) để coi bảng có nội dung

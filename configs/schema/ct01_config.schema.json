@@ -91,6 +91,24 @@
           "type": "integer",
           "minimum": 0,
           "default": 0
+        },
+        "table": {
+          "description": "Tham số riêng cho field type=table (bảng thành viên). Chỉ dùng khi type='table'.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "header_h_frac": {
+              "description": "Tỉ lệ chiều cao phần header (hàng tiêu đề cột) so với cả bảng. Ví dụ header_h_frac=0.2 nghĩa là bỏ ~20% đầu (hàng tiêu đề cột) khi xét nội dung, chỉ OCR phần còn lại để tránh bị nhiễu bởi chữ trong header.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "min_ink": {
+              "description": "Số pixel 'mực' tối thiểu (sau khử kẻ) để coi thân bảng là CÓ nội dung.",
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     }

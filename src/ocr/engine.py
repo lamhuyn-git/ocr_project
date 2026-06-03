@@ -1,41 +1,50 @@
+"""
+engine.py — Lớp giao tiếp với PaddleOCR (tầng OCR thấp nhất).
+
+  - get_ocr_instance() : khởi tạo model 1 lần (singleton), dùng lại cho mọi lần gọi.
+  - run_ocr(ocr, img)  : chạy OCR, trả list block {text, confidence, bbox, center_y, x_left} đã sort.
+
+Detection: PP-OCRv5_mobile_det (official). Recognition: model fine-tune local (models/inference).
+Orchestration (align → config → crop → OCR) nằm ở main.py, KHÔNG ở đây.
+"""
 import os
+from typing import Dict, List
+
 import numpy as np
 from paddleocr import PaddleOCR
-from typing import List, Dict
-
-from .visualize import draw_bounding_boxes
-from .block_merger import merge_blocks_horizontal, merge_blocks_vertical
 
 _ocr_instance = None
 
 
 def get_ocr_instance() -> PaddleOCR:
     global _ocr_instance
-    if _ocr_instance is None:
-        print("Initial PaddleOCR with fine-tuned model...")
 
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        rec_model_dir = os.path.join(project_root, 'models', 'inference')
+    if _ocr_instance is not None:
+        return _ocr_instance
 
-        if not os.path.exists(rec_model_dir):
-            raise FileNotFoundError(
-                f"Inference model not found: {rec_model_dir}\n"
-                f"Expected models/inference/ to exist — export checkpoint via Kaggle export_model.py first."
-            )
+    print("Initial PaddleOCR with fine-tuned model...")
 
-        _ocr_instance = PaddleOCR(
-            lang='vi',
-            device='cpu',
-            # Use mobile detection to keep memory within MacBook Air limits
-            text_detection_model_name='PP-OCRv5_mobile_det',
-            text_recognition_model_name='PP-OCRv5_mobile_rec',
-            text_recognition_model_dir=rec_model_dir,
-            # Preprocessing pipeline already handles orientation/unwarping
-            use_doc_orientation_classify=False,
-            use_textline_orientation=False,
-            use_doc_unwarping=False,
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    rec_model_dir = os.path.join(project_root, 'models', 'inference')
+
+    if not os.path.exists(rec_model_dir):
+        raise FileNotFoundError(
+            f"Inference model not found: {rec_model_dir}\n"
+            f"Expected models/inference/ to exist — export checkpoint via Kaggle export_model.py first."
         )
-        print("Initialized PaddleOCR with fine-tuned model successfully!\n")
+
+    _ocr_instance = PaddleOCR(
+        lang='vi',
+        device='cpu',
+        text_detection_model_name='PP-OCRv5_mobile_det',     # detection: bản mobile official
+        text_recognition_model_name='PP-OCRv5_mobile_rec',   # kiến trúc rec
+        text_recognition_model_dir=rec_model_dir,            # weights rec fine-tune local
+        # Tắt các bước PaddleOCR tự xử lý vì pipeline của ta đã lo (align/warp)
+        use_doc_orientation_classify=False,
+        use_textline_orientation=False,
+        use_doc_unwarping=False,
+    )
+    print("Initialized PaddleOCR with fine-tuned model successfully!\n")
     return _ocr_instance
 
 
@@ -47,9 +56,9 @@ def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
         return []
 
     result = raw_results[0]
-    texts  = result['rec_texts']
-    scores = result['rec_scores']
-    polys  = result['rec_polys']
+    texts = result['rec_texts']      # list chuỗi text
+    scores = result['rec_scores']    # list confidence tương ứng
+    polys = result['rec_polys']      # list bbox (4 điểm) tương ứng
 
     parsed = []
     for text, confidence, bbox in zip(texts, scores, polys):
@@ -57,52 +66,18 @@ def run_ocr(ocr: PaddleOCR, img: np.ndarray) -> List[Dict]:
             continue
 
         bbox_list = bbox.tolist()
-        center_y  = sum(pt[1] for pt in bbox_list) / 4
-        x_left    = min(pt[0] for pt in bbox_list)
+        center_y = sum(pt[1] for pt in bbox_list) / 4
+        x_left = min(pt[0] for pt in bbox_list)
 
         parsed.append({
-            'text':       text.strip(),
+            'text': text.strip(),
             'confidence': round(float(confidence), 4),
-            'bbox':       bbox_list,
-            'center_y':   center_y,
-            'x_left':     x_left,
+            'bbox': bbox_list,
+            'center_y': center_y,
+            'x_left': x_left,
         })
 
     parsed.sort(key=lambda x: (x['center_y'], x['x_left']))
 
     print(f"Find out {len(parsed)} text lines:")
-    # for i, item in enumerate(parsed):
-    #     if item['confidence'] >= 0.85:
-    #         conf_rate = "High confidence"
-    #     elif item['confidence'] >= 0.50:
-    #         conf_rate = "Medium confidence"
-    #     else:
-    #         conf_rate = "Low confidence"
-    #     print(f"  [{i+1:02d}] ({item['confidence']:.1%}) {conf_rate} {item['text']}")
-
     return parsed
-
-
-def filter_by_confidence(ocr_results: List[Dict], min_confidence: float = 0.65) -> List[Dict]:
-    filtered = [r for r in ocr_results if r['confidence'] >= min_confidence]
-    removed = len(ocr_results) - len(filtered)
-    if removed > 0:
-        print(f"Filtered out {removed} lines with confidence < {min_confidence:.0%}")
-    return filtered
-
-
-def get_text_lines(ocr_results: List[Dict]) -> List[str]:
-    return [r['text'] for r in ocr_results]
-
-
-def run_ocr_pipeline(img: np.ndarray) -> tuple:
-    ocr          = get_ocr_instance()
-    raw_results  = run_ocr(ocr, img)
-    if not raw_results:
-        return img, []
-
-    filtered_results = filter_by_confidence(raw_results, min_confidence=0.5)
-    # merged_horizontal_results = merge_blocks_horizontal(filtered_results,  img_width=img.shape[1], img_height=img.shape[0])
-    # merged_vertical_results = merge_blocks_vertical(merged_horizontal_results,    img_height=img.shape[0])
-
-    return img, filtered_results

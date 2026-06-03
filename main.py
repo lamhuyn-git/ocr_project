@@ -1,60 +1,106 @@
+import argparse
+import json
 import os
 import sys
 import cv2
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from ocr.engine   import run_ocr_pipeline
-from ocr.visualize import draw_bounding_boxes
-from preprocess   import preprocess_pipeline
-from kie.kie      import kie
+from alignment import align_form               # noqa: E402
+from config_detection import load_config        # noqa: E402
+from ocr.field_extractor import extract_fields  # noqa: E402
 
-if __name__ == '__main__':
-    # img_path = 'image_test/scan/scan_002.jpg'
-    # base     = os.path.splitext(os.path.basename(img_path))[0]
-
-    # print("PREPROCESSING")
-    # img = preprocess_pipeline(img_path)
-
-    # print("RUN OCR")
-    # img, ocr_blocks = run_ocr_pipeline(img)
-
-    # os.makedirs('outputs/test_results', exist_ok=True)
-    # save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
-    # cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
-
-    # print("RUN KIE")
-    # kie_result = kie(ocr_blocks, img=img)
-    # print('\n[KIE Result]')
-    # for field, value in kie_result.items():
-    #     if value:
-    #         print(f"  {field}: {value}")
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "configs", "templates", "ct01_v1.0.yaml")
+DEFAULT_OUT_DIR = os.path.join(PROJECT_ROOT, "outputs", "extract")
 
 
-    IMAGE_DIR  = 'test_image'
-    EXTENSIONS = {'.jpg', '.jpeg', '.png'}
+def run_pipeline(
+    image_path: str,
+    config_path: str = DEFAULT_CONFIG,
+    conf_threshold: float = 0.5,
+    quality: str = None,
+):
+    img = cv2.imread(image_path)
+    if img is None:
+        raise FileNotFoundError(f"Không đọc được ảnh: {image_path}")
 
-    image_files = sorted([
-        f for f in os.listdir(IMAGE_DIR)
-        if os.path.splitext(f)[1].lower() in EXTENSIONS
-    ])
+    warped, meta = align_form(img)                       # B1: warp về canonical
+    config = load_config(config_path)                    # B2: nạp config
+    results = extract_fields(                             # B3: crop ROI + OCR mọi field
+        warped, config, conf_threshold=conf_threshold, quality=quality
+    )
+    return results, meta
 
 
-    for filename in image_files:
-        img_path = os.path.join(IMAGE_DIR, filename)
-        base = os.path.splitext(os.path.basename(img_path))[0]
-        
-        print("PREPROCESSING")
-        img = preprocess_pipeline(img_path)
+def _print_results(results: dict) -> None:
+    for name, r in results.items():
+        flag = "  ⚠ LOW" if r["low_confidence"] else ""
+        if r["type"] == "table":
+            print(f"[{name}] table — {r['n_blocks']} block, conf={r['confidence']}{flag}")
+            for row in r["rows"]:
+                print(f"    · {row['text']}  ({row['confidence']})")
+        else:
+            print(f"[{name}] ({r['confidence']}){flag}  {r['text']!r}")
 
-        print("RUN OCR")
-        img, ocr_blocks = run_ocr_pipeline(img)
 
-        os.makedirs('outputs/test_results', exist_ok=True)
-        save_img = draw_bounding_boxes(img.copy(), ocr_blocks)
-        cv2.imwrite(f'outputs/test_results/{base}_ocr_result.jpg', save_img)
+IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
 
-        print("RUN KIE")
-        kie_result = kie(ocr_blocks, img=img)
-    
 
+def _collect_images(path: str):
+    """Trả danh sách ảnh: nếu path là thư mục → mọi ảnh trong đó; nếu là file → [file]."""
+    if os.path.isdir(path):
+        return sorted(
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if os.path.splitext(f)[1].lower() in IMAGE_EXTS
+        )
+    return [path]
+
+
+def _process_one(image_path: str, config_path: str, conf: float, quality, out_dir: str) -> bool:
+    """Chạy pipeline cho 1 ảnh, lưu JSON. Trả True nếu thành công."""
+    base = os.path.splitext(os.path.basename(image_path))[0]
+    try:
+        results, meta = run_pipeline(image_path, config_path, conf, quality)
+    except Exception as e:
+        print(f"  ✗ {base}: LỖI — {e}")
+        return False
+
+    out_path = os.path.join(out_dir, f"{base}_fields.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+
+    n_low = sum(1 for r in results.values() if r["low_confidence"])
+    print(f"  ✓ {base}: align={meta['method']} reproj={meta['reproj_error']} "
+          f"| {len(results)} field, {n_low} low-conf → {os.path.basename(out_path)}")
+    return True
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="OCR config-space cho ảnh form CT01 (1 ảnh hoặc cả thư mục).")
+    ap.add_argument("path", help="Đường dẫn ảnh, hoặc THƯ MỤC chứa ảnh.")
+    ap.add_argument("--config", default=DEFAULT_CONFIG)
+    ap.add_argument("--conf", type=float, default=0.5, help="ngưỡng confidence")
+    ap.add_argument("--quality", default=None, choices=["good", "medium", "poor"])
+    ap.add_argument("--out-dir", default=DEFAULT_OUT_DIR)
+    args = ap.parse_args()
+
+    images = _collect_images(args.path)
+    if not images:
+        print(f"Không tìm thấy ảnh trong: {args.path}")
+        return
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    print(f"Xử lý {len(images)} ảnh → {args.out_dir}\n")
+
+    ok = 0
+    for i, img_path in enumerate(images, 1):
+        print(f"[{i}/{len(images)}]", end=" ")
+        ok += _process_one(img_path, args.config, args.conf, args.quality, args.out_dir)
+
+    print(f"\nXong: {ok}/{len(images)} ảnh thành công → {args.out_dir}")
+
+
+if __name__ == "__main__":
+    main()
