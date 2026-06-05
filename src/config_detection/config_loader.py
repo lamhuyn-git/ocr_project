@@ -93,27 +93,32 @@ def _check_semantics(config: dict, path: str) -> None:
 
 
 def apply_quality_overrides(config: dict, quality: Optional[str]) -> dict:
-    if quality is None:
-        return config
+    # TODO(tạm): tắt nhân padding theo quality để calibrate lại ROI 53/2025.
+    #   Đang dùng padding gốc trong config, không scale theo quality.
+    #   Bật lại bằng cách bỏ `return config` dưới đây + uncomment khối bên dưới.
+    return config
 
-    overrides = config.get("quality_overrides", {})
+    # if quality is None:
+    #     return config
 
-    if quality not in overrides:
-        return config
+    # overrides = config.get("quality_overrides", {})
 
-    rule = overrides[quality]        
+    # if quality not in overrides:
+    #     return config
 
-    if "padding_scale" not in rule:
-        return config
+    # rule = overrides[quality]
 
-    scale = rule["padding_scale"]       
+    # if "padding_scale" not in rule:
+    #     return config
 
-    new_config = copy.deepcopy(config)
+    # scale = rule["padding_scale"]
 
-    for field in new_config["fields"].values():
-        old_x = field.get("padding_x", 0)
-        old_y = field.get("padding_y", 0)
-        field["padding_x"] = int(round(old_x * scale))
-        field["padding_y"] = int(round(old_y * scale))
+    # new_config = copy.deepcopy(config)
 
-    return new_config
+    # for field in new_config["fields"].values():
+    #     old_x = field.get("padding_x", 0)
+    #     old_y = field.get("padding_y", 0)
+    #     field["padding_x"] = int(round(old_x * scale))
+    #     field["padding_y"] = int(round(old_y * scale))
+
+    # return new_config
