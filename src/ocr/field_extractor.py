@@ -3,6 +3,7 @@ import numpy as np
 from config_detection.roi_calculator import field_roi_pixels
 from .crop_ocr import crop_roi, join_blocks, ocr_crop
 from .table_extractor import extract_table
+from .normalizer import apply_normalizers
 
 DEFAULT_CONF_THRESHOLD = 0.5
 
@@ -28,10 +29,12 @@ def _extract_text(
     threshold: float,
     quality: Optional[str],
     preprocess: bool,
+    normalize_ops=None,
 ) -> Dict:
     blocks, box = _ocr_field_region(warped, config, name, quality, preprocess)
 
-    text, avg_conf = join_blocks(blocks)
+    text_raw, avg_conf = join_blocks(blocks)
+    text = apply_normalizers(text_raw, normalize_ops)   # chuẩn hoá sau recognize
     is_empty = not text
 
     # Field rỗng coi như low_confidence (không có gì để tin)
@@ -40,6 +43,7 @@ def _extract_text(
     return {
         "type": ftype,
         "text": text,
+        "text_raw": text_raw,          # giữ raw để debug / eval
         "confidence": avg_conf,
         "low_confidence": low_conf,
         "empty": is_empty,
@@ -62,7 +66,10 @@ def _extract_one(
     if field["type"] == "table":
         return extract_table(warped, config, name, threshold, quality, preprocess)
 
-    return _extract_text(warped, config, name, field["type"], threshold, quality, preprocess)
+    return _extract_text(
+        warped, config, name, field["type"], threshold, quality, preprocess,
+        normalize_ops=field.get("normalize"),
+    )
 
 
 def extract_fields(

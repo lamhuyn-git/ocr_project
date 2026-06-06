@@ -92,6 +92,14 @@
           "minimum": 0,
           "default": 0
         },
+        "normalize": {
+          "description": "Danh sách normalizer (whitelist) chạy sau recognize, đúng thứ tự.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label"]
+          }
+        },
         "table": {
           "description": "Tham số riêng cho field type=table (bảng thành viên). Chỉ dùng khi type='table'.",
           "type": "object",
@@ -107,6 +115,29 @@
               "description": "Số pixel 'mực' tối thiểu (sau khử kẻ) để coi thân bảng là CÓ nội dung.",
               "type": "integer",
               "minimum": 0
+            },
+            "columns": {
+              "description": "Tên các cột (trái → phải) để map cell thành object thành viên.",
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
+            "col_x_frac": {
+              "description": "Ranh giới cột (tỉ lệ theo bề ngang ROI, n_cols+1 mốc) — fallback khi dò kẻ dọc không đủ.",
+              "type": "array",
+              "items": { "type": "number", "minimum": 0, "maximum": 1 },
+              "minItems": 2
+            },
+            "cell_normalize": {
+              "description": "Map tên cột → danh sách normalizer áp cho cell cột đó.",
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label"]
+                }
+              }
             }
           }
         }

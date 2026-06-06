@@ -37,9 +37,10 @@ def _print_results(results: dict) -> None:
     for name, r in results.items():
         flag = "  ⚠ LOW" if r["low_confidence"] else ""
         if r["type"] == "table":
-            print(f"[{name}] table — {r['n_blocks']} block, conf={r['confidence']}{flag}")
-            for row in r["rows"]:
-                print(f"    · {row['text']}  ({row['confidence']})")
+            mems = r.get("members", [])
+            print(f"[{name}] table — {len(mems)} thành viên, conf={r['confidence']}{flag}")
+            for m in mems:
+                print(f"    · {m}")
         else:
             print(f"[{name}] ({r['confidence']}){flag}  {r['text']!r}")
 
