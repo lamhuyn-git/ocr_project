@@ -4,6 +4,7 @@ from config_detection.roi_calculator import field_roi_pixels
 from .crop_ocr import crop_roi, join_blocks, ocr_crop
 from .table_extractor import extract_table
 from .normalizer import apply_normalizers
+from .digit_grid import recognize_digit_grid
 
 DEFAULT_CONF_THRESHOLD = 0.5
 
@@ -65,6 +66,18 @@ def _extract_one(
 
     if field["type"] == "table":
         return extract_table(warped, config, name, threshold, quality, preprocess)
+
+    if field["type"] == "digit_grid":
+        h, w = warped.shape[:2]
+        box = field_roi_pixels(config, name, w, h, quality)
+        raw, conf = recognize_digit_grid(warped, box, field.get("cells", 12))
+        text = apply_normalizers(raw, field.get("normalize"))
+        return {
+            "type": "digit_grid", "text": text, "text_raw": raw,
+            "confidence": conf, "low_confidence": conf < 1.0,
+            "empty": not text, "n_blocks": field.get("cells", 12),
+            "bbox": list(box),
+        }
 
     return _extract_text(
         warped, config, name, field["type"], threshold, quality, preprocess,

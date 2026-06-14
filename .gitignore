@@ -299,7 +299,7 @@ output_mobile_rec_lite/
 *.pdmodel
 
 # OCR output results (incl. nested ones like real_test/outputs/)
-outputs/
+debug_output/
 
 # Datasets / images (backed up elsewhere, e.g. Kaggle)
 image_test/
@@ -318,3 +318,5 @@ models/
 
 # tokens / secrets
 tokens.txt
+
+

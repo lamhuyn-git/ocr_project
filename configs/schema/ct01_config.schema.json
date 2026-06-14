@@ -77,7 +77,12 @@
         "type": {
           "description": "Loại field quyết định cách Phase 03 đọc trong ROI.",
           "type": "string",
-          "enum": ["text_line", "text_block", "number", "table"]
+          "enum": ["text_line", "text_block", "number", "table", "digit_grid"]
+        },
+        "cells": {
+          "description": "Số ô của field digit_grid (vd số định danh = 12 ô).",
+          "type": "integer",
+          "minimum": 1
         },
         "roi_norm": { "$ref": "#/$defs/roi_norm" },
         "padding_x": {
@@ -97,7 +102,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label"]
+            "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label", "strip_trail_punct", "gioi_tinh_snap", "email_fix"]
           }
         },
         "table": {
@@ -135,7 +140,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label"]
+                  "enum": ["nfc", "trim", "collapse_ws", "strip_space", "date_ddmmyyyy", "strip_label", "strip_trail_punct", "gioi_tinh_snap", "email_fix"]
                 }
               }
             }

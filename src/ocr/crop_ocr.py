@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 from PIL.ImageOps import crop
 import cv2
 import numpy as np
-from .engine import get_ocr_instance, run_ocr
+from .engine import get_ocr_instance, run_ocr, reset_instance
 
 
 def crop_roi(img: np.ndarray, box: Tuple[int, int, int, int]) -> np.ndarray:
@@ -25,17 +25,17 @@ def _map_point_to_canvas(point, scale_x, scale_y, offset_x, offset_y):
     return [x * scale_x + offset_x, y * scale_y + offset_y]
 
 
-def ocr_crop(crop, box_offset=(0, 0), preprocess=True):
+def ocr_crop(crop, box_offset=(0, 0), preprocess=True, model_version=None):
     if crop is None or crop.size == 0:
         return []
-    
+
     # Nếu ảnh crop quá nhỏ, scale lên cho OCR dễ đọc hơn.
     if preprocess:
-        image_to_ocr = optional_preprocess(crop) 
+        image_to_ocr = optional_preprocess(crop)
     else:
-        image_to_ocr = crop       
-    
-    blocks = run_ocr(get_ocr_instance(), image_to_ocr)
+        image_to_ocr = crop
+
+    blocks = run_ocr(get_ocr_instance(model_version), image_to_ocr)
 
     # Tính tỉ lệ đưa toạ độ từ ảnh-đã-OCR về crop gốc.
     scale_x = crop.shape[1] / image_to_ocr.shape[1]

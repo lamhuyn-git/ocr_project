@@ -13,38 +13,17 @@ quality_overrides:
     padding_scale: 1.6
 
 fields:
-  title:
-    type: text_block
-    roi_norm: { x: 0.2446, y: 0.071, w: 0.556, h: 0.0413 }
-    normalize: [nfc, trim, collapse_ws]
-    padding_x: 10
-    padding_y: 4
-
-  national_header:
-    type: text_block
-    roi_norm: { x: 0.2816, y: 0.1231, w: 0.4887, h: 0.0442 }
-    normalize: [nfc, trim, collapse_ws]
-    padding_x: 10
-    padding_y: 4
-
-  form_name:
-    type: text_line
-    roi_norm: { x: 0.3038, y: 0.1835, w: 0.4404, h: 0.0199 }
-    normalize: [nfc, trim, collapse_ws]
-    padding_x: 6
-    padding_y: 4
-
   kinh_gui:
     type: text_line
-    roi_norm: { x: 0.2828, y: 0.2072, w: 0.5177, h: 0.0262 }
-    normalize: [nfc, trim, collapse_ws]
+    roi_norm: { x: 0.2828, y: 0.2072, w: 0.7, h: 0.0262 }
+    normalize: [nfc, trim, collapse_ws, strip_trail_punct]
     padding_x: 6
     padding_y: 4
 
   ho_chu_dem_va_ten:
     type: text_line
     roi_norm: { x: 0.4077, y: 0.2348, w: 0.4976, h: 0.0279 }
-    normalize: [nfc, trim, collapse_ws]
+    normalize: [nfc, trim, collapse_ws, strip_trail_punct]
     padding_x: 6
     padding_y: 4
 
@@ -58,12 +37,13 @@ fields:
   gioi_tinh:
     type: text_line
     roi_norm: { x: 0.8215, y: 0.2571, w: 0.0846, h: 0.0299 }
-    normalize: [nfc, trim, strip_space]
+    normalize: [nfc, trim, strip_space, gioi_tinh_snap]
     padding_x: 12
     padding_y: 4
 
   so_dinh_dan_ca_nhan:
-    type: number
+    type: digit_grid
+    cells: 12
     roi_norm: { x: 0.448, y: 0.2904, w: 0.446, h: 0.0308 }
     normalize: [trim, strip_space]
     padding_x: 8
@@ -79,26 +59,27 @@ fields:
   email:
     type: text_line
     roi_norm: { x: 0.6958, y: 0.3226, w: 0.2385, h: 0.0276 }
-    normalize: [trim, strip_space]
+    normalize: [trim, strip_space, email_fix]
     padding_x: 12
     padding_y: 4
 
   ho_chu_dem_va_ten_chu_ho:
     type: text_line
     roi_norm: { x: 0.4065, y: 0.3497, w: 0.1664, h: 0.0276 }
-    normalize: [nfc, trim, collapse_ws]
+    normalize: [nfc, trim, collapse_ws, strip_trail_punct]
     padding_x: 4
     padding_y: 4
 
   moi_quan_he_voi_chu_ho:
     type: text_line
     roi_norm: { x: 0.8106, y: 0.3468, w: 0.1257, h: 0.0299 }
-    normalize: [nfc, trim, collapse_ws]
+    normalize: [nfc, trim, collapse_ws, strip_trail_punct]
     padding_x: 6
     padding_y: 4
 
   so_dinh_dan_ca_nhan_cua_chu_ho:
-    type: number
+    type: digit_grid
+    cells: 12
     roi_norm: { x: 0.4903, y: 0.3787, w: 0.4138, h: 0.0322 }
     normalize: [trim, strip_space]
     padding_x: 8
@@ -124,8 +105,8 @@ fields:
       col_x_frac: [0.0, 0.07, 0.36, 0.52, 0.61, 0.84, 1.0]
       cell_normalize:
         tt: [trim, strip_space]
-        ho_ten: [nfc, trim, collapse_ws]
+        ho_ten: [nfc, trim, collapse_ws, strip_trail_punct]
         ngay_sinh: [trim, date_ddmmyyyy, strip_space]
-        gioi_tinh: [nfc, trim, strip_space]
+        gioi_tinh: [nfc, trim, strip_space, gioi_tinh_snap]
         so_dinh_danh: [trim, strip_space]
-        quan_he: [nfc, trim, collapse_ws]
+        quan_he: [nfc, trim, collapse_ws, strip_trail_punct]

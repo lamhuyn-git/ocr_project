@@ -14,25 +14,48 @@ import numpy as np
 from paddleocr import PaddleOCR
 
 _ocr_instance = None
+_ocr_model_version = None   # version hiện tại của singleton
 
 
-def get_ocr_instance() -> PaddleOCR:
-    global _ocr_instance
+def reset_instance():
+    """Xoá singleton để lần gọi get_ocr_instance() tiếp theo load model mới."""
+    global _ocr_instance, _ocr_model_version
+    _ocr_instance = None
+    _ocr_model_version = None
 
-    if _ocr_instance is not None:
+
+def get_ocr_instance(model_version=None) -> PaddleOCR:
+    """
+    Trả PaddleOCR singleton.
+    model_version: tên thư mục trong models/ (vd 'paddle_v9', 'paddle_v12').
+    Nếu None → lấy từ env OCR_MODEL_VERSION (mặc định 'paddle_v9') → cho phép host
+    (vd backend) chọn model qua config mà không cần sửa code pipeline.
+    Nếu model_version thay đổi so với lần trước, singleton được tạo lại.
+    """
+    global _ocr_instance, _ocr_model_version
+
+    if model_version is None:
+        model_version = os.getenv("OCR_MODEL_VERSION", "paddle_v9")
+
+    if _ocr_instance is not None and _ocr_model_version == model_version:
         return _ocr_instance
 
-    print("Initial PaddleOCR with fine-tuned model...")
+    if _ocr_instance is not None:
+        # model version thay đổi → reset
+        _ocr_instance = None
+
+    print(f"Initial PaddleOCR with fine-tuned model ({model_version})...")
 
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    rec_model_dir = os.path.join(project_root, 'models', 'inference')
+    rec_model_dir = os.path.join(project_root, 'models', model_version, 'inference')
 
     if not os.path.exists(rec_model_dir):
         raise FileNotFoundError(
             f"Inference model not found: {rec_model_dir}\n"
-            f"Expected models/inference/ to exist — export checkpoint via Kaggle export_model.py first."
+            f"Expected models/{model_version}/inference/ to exist."
         )
 
+    _ocr_model_version = model_version
     _ocr_instance = PaddleOCR(
         lang='vi',
         device='cpu',

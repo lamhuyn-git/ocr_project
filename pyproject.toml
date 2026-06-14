@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocr-pipeline"
+version = "0.1.0"
+description = "Form OCR pipeline: alignment, config-driven ROI extraction, OCR, validation."
+requires-python = ">=3.9"
+# Runtime deps (paddleocr, paddlepaddle, opencv, etc.) are managed by the host
+# environment's requirements.txt to avoid clobbering pinned versions on editable install.
+dependencies = []
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["alignment*", "config_detection*", "ocr*", "validator*"]
+exclude = ["evaluation*"]

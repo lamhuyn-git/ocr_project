@@ -121,9 +121,10 @@ def _detect_col_bounds(crop: np.ndarray, n_cols: int, fallback_fracs=None):
     w = crop.shape[1]
     xs = [x for x in _vertical_ruling_xs(crop) if 2 < x < w - 2]
     bounds = sorted(set([0] + xs + [w]))
-    if len(bounds) >= n_cols + 1:
-        idx = np.linspace(0, len(bounds) - 1, n_cols + 1).round().astype(int)
-        return [bounds[i] for i in idx], "rulings"
+    # Chỉ tin kẻ dọc khi ra ĐÚNG n_cols+1 mốc. Nếu dư (nhiễu/nét chữ) hoặc thiếu,
+    # subsample theo index dễ chọn nhầm ranh → ưu tiên col_x_frac đã calibrate trong config.
+    if len(bounds) == n_cols + 1:
+        return bounds, "rulings"
     if fallback_fracs and len(fallback_fracs) == n_cols + 1:
         return [int(f * w) for f in fallback_fracs], "config"
     return [int(round(i * w / n_cols)) for i in range(n_cols + 1)], "even"
@@ -137,14 +138,16 @@ def _assemble_members(rows: list, bounds_abs: list, col_names: list, cell_norm=N
     for ri, row in enumerate(rows, 1):
         cols = {c: [] for c in col_names}
         for cell in row["cells"]:
-            x1, _, x2, _ = cell["bbox"]
-            cx = (x1 + x2) / 2
+            # bbox là polygon 4 điểm [[x,y],...]; lấy center_x từ min/max của các toạ độ x.
+            xs = [pt[0] for pt in cell["bbox"]]
+            x_left = min(xs)
+            cx = (x_left + max(xs)) / 2
             ci = n - 1
             for k in range(n):
                 if cx < bounds_abs[k + 1]:
                     ci = k
                     break
-            cols[col_names[ci]].append((x1, cell["text"]))
+            cols[col_names[ci]].append((x_left, cell["text"]))
         merged = {c: " ".join(t for _, t in sorted(v)).strip() for c, v in cols.items()}
         if not any(merged.values()):
             continue                                # hàng rỗng → bỏ
